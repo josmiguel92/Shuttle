@@ -89,7 +89,6 @@ android {
     buildTypes {
 
         debug {
-            applicationIdSuffix ".debug"
             ext.enableCrashlytics = false
         }
 
@@ -97,7 +96,7 @@ android {
 
             minifyEnabled true
             shrinkResources true
-
+            ext.enableCrashlytics = false
             // For further optimisation, use 'proguard-android-optimize.txt' instead of 'proguard-android.txt'.
             // Last time I checked, it reduced by another ~5000 methods.
             proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.pro')
@@ -153,29 +152,29 @@ android {
         dev {
             dimension "all"
 
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
 
             resConfigs "en", "xxhdpi"
         }
 
         paid {
             dimension "all"
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         free {
             dimension "all"
-            applicationId "another.music.player"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         amazonPaid {
             dimension "all"
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         amazonFree {
             dimension "all"
-            applicationId "another.music.player"
+            applicationId "edu.usf.sas.pal.muser"
         }
     }
 
