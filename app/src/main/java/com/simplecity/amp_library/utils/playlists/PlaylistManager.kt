@@ -9,12 +9,12 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.text.style.StyleSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import com.afollestad.materialdialogs.MaterialDialog
-import com.crashlytics.android.Crashlytics
 import com.simplecity.amp_library.R
 import com.simplecity.amp_library.data.SongsRepository
 import com.simplecity.amp_library.interfaces.FileType
@@ -24,6 +24,7 @@ import com.simplecity.amp_library.model.Query
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.sql.SqlUtils
 import com.simplecity.amp_library.sql.providers.PlayCountTable
+import com.simplecity.amp_library.ui.screens.tagger.TaggerUtils
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.SettingsManager
 import com.simplecity.amp_library.utils.ShuttleUtils
@@ -31,7 +32,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import java.util.ArrayList
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -200,7 +201,8 @@ class PlaylistManager @Inject constructor(
                             id = java.lang.Long.parseLong(uri.lastPathSegment!!)
                         }
                     } catch (e: NullPointerException) {
-                        Crashlytics.log("Failed to create playlist: " + e.message)
+                        Log.e(TAG, "Failed to create playlist:  $e")
+
                     }
 
                 }
@@ -210,7 +212,8 @@ class PlaylistManager @Inject constructor(
         if (id != -1L) {
             playlist = Playlist(Playlist.Type.USER_CREATED, id, name, true, false, true, true, true)
         } else {
-            Crashlytics.log(String.format("Failed to create playlist. Name: %s, id: %d", name, id))
+            Log.e(TAG, String.format("Failed to create playlist. Name: %s, id: %d", name, id))
+
         }
 
         return playlist

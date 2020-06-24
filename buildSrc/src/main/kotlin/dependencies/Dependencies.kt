@@ -8,7 +8,6 @@ object Dependencies {
 
     object Versions {
         const val nanoHttp = "2.3.1"
-        const val crashlytics = "2.9.9"
         const val dashClockApi = "2.0.0"
         const val fastScroll = "1.0.20"
         const val glide = "3.8.0"
@@ -32,8 +31,6 @@ object Dependencies {
     // NanoHttp - https://github.com/NanoHttpd/nanohttpd (Various)
     const val nanoHttp = "org.nanohttpd:nanohttpd-webserver:${Versions.nanoHttp}"
 
-    // Crashlytics - https://fabric.io/kits/android/crashlytics
-    const val crashlytics = "com.crashlytics.sdk.android:crashlytics:${Versions.crashlytics}"
 
     // Dashclock - https://git.io/vix9g (Roman Nurik)
     const val dashClockApi = "com.google.android.apps.dashclock:dashclock-api:${Versions.dashClockApi}"
