@@ -33,6 +33,7 @@ import com.simplecity.amp_library.utils.InputMethodManagerLeaks;
 import com.simplecity.amp_library.utils.LegacyUtils;
 import com.simplecity.amp_library.utils.LogUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
+import com.simplecity.amp_library.utils.ShuttleUtils;
 import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.extensions.GenreExtKt;
 import com.squareup.leakcanary.LeakCanary;
@@ -67,7 +68,7 @@ public class ShuttleApplication extends DaggerApplication {
 
     private static final String TAG = "ShuttleApplication";
 
-    private boolean isUpgraded;
+    private boolean isUpgraded = true;
 
     private RefWatcher refWatcher;
 
@@ -212,8 +213,8 @@ public class ShuttleApplication extends DaggerApplication {
     }
 
     public void setIsUpgraded(boolean isUpgraded) {
-        this.isUpgraded = isUpgraded;
-        analyticsManager.setIsUpgraded(isUpgraded);
+//        this.isUpgraded = isUpgraded;
+//        analyticsManager.setIsUpgraded(isUpgraded);
     }
 
     public boolean getIsUpgraded() {
