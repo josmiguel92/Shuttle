@@ -68,6 +68,7 @@ import com.simplecity.amp_library.ui.views.SizableSeekBar;
 import com.simplecity.amp_library.ui.views.SnowfallView;
 import com.simplecity.amp_library.ui.views.multisheet.MultiSheetSlideEventRelay;
 import com.simplecity.amp_library.utils.LogUtils;
+import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
 import com.simplecity.amp_library.utils.PlaceholderProvider;
 import com.simplecity.amp_library.utils.RingtoneManager;
 import com.simplecity.amp_library.utils.SettingsManager;
@@ -76,6 +77,8 @@ import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.color.ArgbEvaluator;
 import com.simplecity.amp_library.utils.menu.song.SongMenuUtils;
 import dagger.android.support.AndroidSupportInjection;
+import edu.usf.sas.pal.muser.model.EventType;
+import edu.usf.sas.pal.muser.util.EventUtils;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
@@ -224,6 +227,14 @@ public class PlayerFragment extends BaseFragment implements
         if (playPauseView != null) {
             playPauseView.setOnClickListener(v -> playPauseView.toggle(() -> {
                 presenter.togglePlayback();
+                Song song = getSong();
+                EventType eventType;
+                if (isPlaying())
+                    eventType = EventType.PLAY_MANUAL;
+                else
+                    eventType = EventType.PAUSE_MANUAL;
+                Log.d(TAG, "onViewCreated: " + eventType);
+                EventUtils.newEvent(song, eventType, getContext());
                 return Unit.INSTANCE;
             }));
         }
@@ -752,5 +763,20 @@ public class PlayerFragment extends BaseFragment implements
     @Override
     public void showRingtoneSetMessage() {
         Toast.makeText(getContext(), R.string.ringtone_set_new, Toast.LENGTH_SHORT).show();
+    }
+
+    @Nullable
+    private Song getSong() {
+        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
+            return MusicServiceConnectionUtils.serviceBinder.getService().getSong();
+        }
+        return null;
+    }
+
+    private boolean isPlaying(){
+        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
+            return MusicServiceConnectionUtils.serviceBinder.getService().isPlaying();
+        }
+        return false;
     }
 }
