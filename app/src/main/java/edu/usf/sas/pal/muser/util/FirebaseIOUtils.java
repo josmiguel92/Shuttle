@@ -1,18 +1,23 @@
 package edu.usf.sas.pal.muser.util;
 
+import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
-
+import android.widget.Toast;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-
+import com.simplecity.amp_library.R;
+import com.simplecity.amp_library.ShuttleApplication;
+import edu.usf.sas.pal.muser.constants.EventConstants;
+import edu.usf.sas.pal.muser.manager.UserRegistrationManager;
+import edu.usf.sas.pal.muser.model.PlayerEvent;
+import edu.usf.sas.pal.muser.model.UiEvent;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import edu.usf.sas.pal.muser.constants.EventConstants;
-import edu.usf.sas.pal.muser.model.PlayerEvent;
-import edu.usf.sas.pal.muser.model.UiEvent;
 
 public class FirebaseIOUtils {
     private static final String TAG = "FirebaseIO";
@@ -73,20 +78,53 @@ public class FirebaseIOUtils {
     public static void logErrorMessage(Exception e, String message) {
         if (e != null) {
             Log.d(TAG, message + e.getMessage());
+            e.printStackTrace();
         } else {
             Log.d(TAG, message);
         }
     }
 
-    public static void registerUser(String email){
+    public static void registerUser(String email, Context context){
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
         firebaseAuth.signInAnonymously()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Firebase user initialized with id:" + firebaseAuth.getUid());
-                        // TODO save email address to Google APP Scripts
-                        PreferenceUtils.saveString(EventConstants.USER_ID, firebaseAuth.getUid());
+                        new AsyncTask<Void, Integer, Integer>(){
+                            @Override
+                            protected Integer doInBackground(Void... voids) {
+                                int responseCode = 0;
+                                try {
+                                     responseCode = UserRegistrationManager
+                                            .saveEmailAddress(firebaseAuth.getUid(),
+                                            email);
+                                } catch (IOException e) {
+                                    Log.e(TAG, "doInBackground: "
+                                            + Arrays.toString(e.getStackTrace()));
+                                }
+                                return responseCode;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Integer responseCode) {
+                                if (responseCode == 200) {
+                                    Toast.makeText(context,
+                                            ShuttleApplication.get()
+                                                    .getResources().getString(R.string.toast_enrollment_successful),
+                                            Toast.LENGTH_SHORT).show();
+                                    UserRegistrationManager
+                                            .optInUser(firebaseAuth.getUid());
+                                }
+                                else{
+                                    Toast.makeText(context,
+                                            ShuttleApplication.get()
+                                                    .getResources().getString(R.string.toast_enrollment_failed),
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }.execute();
                         initFirebaseUserWithId(firebaseAuth.getUid());
+                        UserRegistrationManager.switchToMainActivity(context);
                     } else {
                         logErrorMessage(task.getException(),
                                 "user initialization failed: ");
