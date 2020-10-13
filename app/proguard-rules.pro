@@ -114,3 +114,6 @@
 # Custom Cast Media Button, only referenced via menu
 -keep class com.simplecity.amp_library.ui.views.CustomMediaRouteActionProvider.CustomMediaRouteButton { *; }
 -keep class com.simplecity.amp_library.ui.views.CustomMediaRouteActionProvider { *; }
+
+# Model class for Firebase Song data
+-keepclassmembers class edu.usf.sas.pal.muser.model.** { *; }
