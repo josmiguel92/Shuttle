@@ -100,9 +100,9 @@ public class MiniPlayerFragment extends BaseFragment {
 
         playPauseView.setOnClickListener(v -> playPauseView.toggle(() -> {
             presenter.togglePlayback();
-            Song song = getSong();
+            Song song = MusicServiceConnectionUtils.getSong();
             UiEventType uiEventType;
-            if (isPlaying()) {
+            if (MusicServiceConnectionUtils.isPlaying()) {
                 uiEventType = UiEventType.PLAY;
             } else {
                 uiEventType = UiEventType.PAUSE;
@@ -263,19 +263,4 @@ public class MiniPlayerFragment extends BaseFragment {
             UpgradeDialog.Companion.newInstance().show(getChildFragmentManager());
         }
     };
-
-    @Nullable
-    private Song getSong() {
-        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
-            return MusicServiceConnectionUtils.serviceBinder.getService().getSong();
-        }
-        return null;
-    }
-
-    private boolean isPlaying(){
-        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
-            return MusicServiceConnectionUtils.serviceBinder.getService().isPlaying();
-        }
-        return false;
-    }
 }

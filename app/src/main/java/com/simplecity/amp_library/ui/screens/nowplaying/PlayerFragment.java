@@ -77,8 +77,6 @@ import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.color.ArgbEvaluator;
 import com.simplecity.amp_library.utils.menu.song.SongMenuUtils;
 import dagger.android.support.AndroidSupportInjection;
-import edu.usf.sas.pal.muser.model.PlayerEvent;
-import edu.usf.sas.pal.muser.model.PlayerEventType;
 import edu.usf.sas.pal.muser.model.UiEvent;
 import edu.usf.sas.pal.muser.model.UiEventType;
 import edu.usf.sas.pal.muser.util.EventUtils;
@@ -231,9 +229,9 @@ public class PlayerFragment extends BaseFragment implements
         if (playPauseView != null) {
             playPauseView.setOnClickListener(v -> playPauseView.toggle(() -> {
                 presenter.togglePlayback();
-                Song song = getSong();
+                Song song = MusicServiceConnectionUtils.getSong();
                 UiEventType uiEventType;
-                if (isPlaying()) {
+                if (MusicServiceConnectionUtils.isPlaying()) {
                     uiEventType = UiEventType.PLAY;
                 } else {
                     uiEventType = UiEventType.PAUSE;
@@ -768,20 +766,5 @@ public class PlayerFragment extends BaseFragment implements
     @Override
     public void showRingtoneSetMessage() {
         Toast.makeText(getContext(), R.string.ringtone_set_new, Toast.LENGTH_SHORT).show();
-    }
-
-    @Nullable
-    public static Song getSong() {
-        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
-            return MusicServiceConnectionUtils.serviceBinder.getService().getSong();
-        }
-        return null;
-    }
-
-    private boolean isPlaying(){
-        if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
-            return MusicServiceConnectionUtils.serviceBinder.getService().isPlaying();
-        }
-        return false;
     }
 }

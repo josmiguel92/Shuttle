@@ -30,6 +30,7 @@ import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.simplecity.amp_library.R
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.cast.CastManager
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.glide.utils.AlwaysCrossFade
@@ -154,9 +155,10 @@ class ArtistDetailFragment :
 
     private val songClickListener = object : SongView.ClickListener {
         override fun onSongClick(position: Int, songView: SongView) {
-            val uiEvent = EventUtils.newUiEvent(songView.song, UiEventType.PLAY, context)
-            FirebaseIOUtils.saveUiEvent(uiEvent)
             if (!contextualToolbarHelper!!.handleClick(songView, Single.just(listOf(songView.song)))) {
+                val uiEvent = EventUtils.newUiEvent(songView.song, UiEventType.PLAY,
+                        ShuttleApplication.get())
+                FirebaseIOUtils.saveUiEvent(uiEvent)
                 presenter.songClicked(songView.song)
             }
         }

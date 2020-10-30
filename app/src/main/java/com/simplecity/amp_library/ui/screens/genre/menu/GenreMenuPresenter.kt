@@ -10,6 +10,9 @@ import com.simplecity.amp_library.ui.screens.album.menu.AlbumMenuPresenter
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.extensions.getSongs
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
@@ -42,6 +45,7 @@ class GenreMenuPresenter @Inject constructor(
     }
 
     override fun play(genre: Genre) {
+        newUiEvent(UiEventType.PLAY_GENRE, genre)
         mediaManager.playAll(genre.getSongs(context)) {
             view?.onPlaybackFailed()
         }
@@ -66,5 +70,8 @@ class GenreMenuPresenter @Inject constructor(
                 )
         )
     }
-
+    fun newUiEvent(uiEventType: UiEventType, genre: Genre){
+        val uiEvent = EventUtils.newUiGenreEvent(genre, uiEventType)
+        FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
 }

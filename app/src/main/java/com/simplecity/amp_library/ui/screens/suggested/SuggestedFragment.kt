@@ -12,6 +12,7 @@ import android.widget.Toast
 import com.bumptech.glide.RequestManager
 import com.simplecity.amp_library.R
 import com.simplecity.amp_library.R.string
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
@@ -185,7 +186,8 @@ class SuggestedFragment :
     inner class SongClickListener(val songs: List<Song>) : SuggestedSongView.ClickListener {
 
         override fun onSongClick(song: Song, holder: SuggestedSongView.ViewHolder) {
-            val uiEvent = EventUtils.newUiEvent(song, UiEventType.PLAY, context)
+            val uiEvent = EventUtils.newUiEvent(song, UiEventType.PLAY,
+                 ShuttleApplication.get())
             FirebaseIOUtils.saveUiEvent(uiEvent)
             mediaManager.playAll(songs, songs.indexOf(song), true) {
                 onPlaybackFailed()

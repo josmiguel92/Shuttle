@@ -11,6 +11,7 @@ import com.simplecity.amp_library.playback.constants.InternalIntents
 import com.simplecity.amp_library.ui.common.Presenter
 import com.simplecity.amp_library.ui.screens.songs.menu.SongMenuPresenter
 import com.simplecity.amp_library.utils.LogUtils
+import com.simplecity.amp_library.utils.MusicServiceConnectionUtils
 import com.simplecity.amp_library.utils.SettingsManager
 import com.simplecity.amp_library.utils.ShuttleUtils
 import com.simplecity.amp_library.utils.menu.song.SongsMenuCallbacks
@@ -302,9 +303,8 @@ class PlayerPresenter @Inject constructor(
     }
 
     fun saveUiEvent(uiEventType: UiEventType){
-        if (PlayerFragment.getSong() != null) {
-            val uiEvent = EventUtils.newUiEvent(PlayerFragment.getSong(), uiEventType, context)
+        val song = MusicServiceConnectionUtils.getSong()
+            val uiEvent = EventUtils.newUiEvent(song!!, uiEventType, context)
             FirebaseIOUtils.saveUiEvent(uiEvent)
-        }
     }
 }

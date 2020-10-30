@@ -6,6 +6,9 @@ package edu.usf.sas.pal.muser.model;
  */
 public enum UiEventType {
          PLAY,
+         PLAY_ALBUM,
+         PLAY_ALBUM_ARTIST,
+         PLAY_GENRE,
          PAUSE,
          NEXT,
          REPEAT,

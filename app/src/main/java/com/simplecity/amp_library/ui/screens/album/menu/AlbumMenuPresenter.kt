@@ -15,6 +15,9 @@ import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.extensions.getSongs
 import com.simplecity.amp_library.utils.extensions.getSongsSingle
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -62,6 +65,7 @@ class AlbumMenuPresenter @Inject constructor(
 
     override fun play(album: Album) {
         mediaManager.playAll(album.getSongsSingle(songsRepository)) { view?.onPlaybackFailed() }
+        newUiEvent(UiEventType.PLAY_ALBUM, album)
     }
 
     override fun editTags(album: Album) {
@@ -125,4 +129,8 @@ class AlbumMenuPresenter @Inject constructor(
         const val TAG = "AlbumMenuContract"
     }
 
+    fun newUiEvent(uiEventType: UiEventType, album: Album){
+            val uiEvent = EventUtils.newUiAlbumEvent(album, uiEventType)
+            FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
 }
