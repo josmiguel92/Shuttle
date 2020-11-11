@@ -1,5 +1,6 @@
 package com.simplecity.amp_library.ui.screens.album.menu
 
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.Playlist
@@ -41,6 +42,11 @@ class AlbumMenuPresenter @Inject constructor(
 
     override fun addAlbumsToPlaylist(playlist: Playlist, albums: List<Album>) {
         getSongs(albums) { songs ->
+            if (playlist.type == Playlist.Type.FAVORITES) {
+                songs.forEach {
+                    newUiEvent(it)
+                }
+            }
             playlistManager.addToPlaylist(playlist, songs) { numSongs ->
                 view?.onSongsAddedToPlaylist(playlist, numSongs)
             }
@@ -65,7 +71,7 @@ class AlbumMenuPresenter @Inject constructor(
 
     override fun play(album: Album) {
         mediaManager.playAll(album.getSongsSingle(songsRepository)) { view?.onPlaybackFailed() }
-        newUiEvent(UiEventType.PLAY_ALBUM, album)
+        newUiAlbumEvent(album)
     }
 
     override fun editTags(album: Album) {
@@ -129,8 +135,13 @@ class AlbumMenuPresenter @Inject constructor(
         const val TAG = "AlbumMenuContract"
     }
 
-    fun newUiEvent(uiEventType: UiEventType, album: Album){
-            val uiEvent = EventUtils.newUiAlbumEvent(album, uiEventType)
+    private fun newUiAlbumEvent(album: Album){
+            val uiEvent = EventUtils.newUiAlbumEvent(album, UiEventType.PLAY_ALBUM)
             FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
+
+    private fun newUiEvent(song: Song){
+        val uiEvent = EventUtils.newUiEvent(song, UiEventType.FAVORITE, ShuttleApplication.get())
+        FirebaseIOUtils.saveUiEvent(uiEvent)
     }
 }
