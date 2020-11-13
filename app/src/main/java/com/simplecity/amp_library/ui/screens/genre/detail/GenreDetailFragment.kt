@@ -281,7 +281,7 @@ class GenreDetailFragment :
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
-        if (!GenreMenuUtils.getGenreClickListener(genre, presenter).onMenuItemClick(item)) {
+        if (!GenreMenuUtils.getGenreClickListener(context!!, genre, presenter).onMenuItemClick(item)) {
             val albumSortOrder = AlbumSortHelper.handleAlbumDetailMenuSortOrderClicks(item)
             if (albumSortOrder != null) {
                 sortManager.genreDetailAlbumsSortOrder = albumSortOrder
@@ -383,7 +383,7 @@ class GenreDetailFragment :
             disposables.add(playlistMenuHelper.createUpdatingPlaylistMenu(sub).subscribe())
 
             contextualToolbar.setOnMenuItemClickListener(
-                SongMenuUtils.getSongMenuClickListener(Single.defer { Operators.reduceSongSingles(contextualToolbarHelper!!.items) }, presenter)
+                SongMenuUtils.getSongMenuClickListener(context!!, Single.defer { Operators.reduceSongSingles(contextualToolbarHelper!!.items) }, presenter)
             )
 
             contextualToolbarHelper = object : ContextualToolbarHelper<Single<List<Song>>>(context!!, contextualToolbar, object : ContextualToolbarHelper.Callback {
@@ -465,7 +465,7 @@ class GenreDetailFragment :
         override fun onSongOverflowClick(position: Int, v: View, song: Song) {
             val popupMenu = PopupMenu(v.context, v)
             SongMenuUtils.setupSongMenu(popupMenu, false, true, playlistMenuHelper)
-            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(song, presenter))
+            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(context!!, song, presenter))
             popupMenu.show()
         }
 
@@ -489,7 +489,7 @@ class GenreDetailFragment :
         override fun onAlbumOverflowClicked(v: View, album: Album) {
             val popupMenu = PopupMenu(v.context, v)
             AlbumMenuUtils.setupAlbumMenu(popupMenu, playlistMenuHelper, true)
-            popupMenu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(album, presenter))
+            popupMenu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(context!!, album, presenter))
             popupMenu.show()
         }
     }

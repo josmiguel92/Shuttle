@@ -408,6 +408,7 @@ class SearchFragment :
             disposables.add(playlistMenuHelper.createUpdatingPlaylistMenu(sub).subscribe())
 
             contextualToolbar.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(
+                    context!!,
                     Single.defer { Operators.reduceSongSingles(contextualToolbarHelper!!.items) },
                     presenter
             ))
@@ -461,7 +462,7 @@ class SearchFragment :
         override fun onSongOverflowClick(position: Int, v: View, song: Song) {
             val menu = PopupMenu(v.context, v)
             SongMenuUtils.setupSongMenu(menu, false, true, playlistMenuHelper)
-            menu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(song, presenter))
+            menu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(context!!, song, presenter))
             menu.show()
         }
 
@@ -484,7 +485,7 @@ class SearchFragment :
         override fun onAlbumOverflowClicked(v: View, album: Album) {
             val menu = PopupMenu(v.context, v)
             AlbumMenuUtils.setupAlbumMenu(menu, playlistMenuHelper, true)
-            menu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(album, presenter))
+            menu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(context!!, album, presenter))
             menu.show()
         }
     }
@@ -504,7 +505,7 @@ class SearchFragment :
             val menu = PopupMenu(v.context, v)
             menu.inflate(R.menu.menu_artist)
             menu.setOnMenuItemClickListener(
-                    AlbumArtistMenuUtils.getAlbumArtistClickListener(albumArtist, presenter))
+                    AlbumArtistMenuUtils.getAlbumArtistClickListener(context!!, albumArtist, presenter))
             menu.show()
         }
     }
