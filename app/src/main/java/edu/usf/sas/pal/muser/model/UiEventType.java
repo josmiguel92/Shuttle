@@ -15,9 +15,12 @@ public enum UiEventType {
          REPEAT_OFF,
          REPEAT_ALL_SONGS,
          REPEAT_CURRENT_SONG,
+         SCAN_FORWARD,
+         SCAN_BACKWARD,
          FAVORITE,
          UNFAVORITE,
-         SEEK,
+         SEEK_START,
+         SEEK_STOP, // seek position for SEEK_STOP will always match SEEK_START in the case of skipping seek positions using the seek bar
          SHUFFLE_ON,
          SHUFFLE_OFF,
          CREATE_PLAYLIST,

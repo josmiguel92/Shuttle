@@ -107,7 +107,7 @@ public class MiniPlayerFragment extends BaseFragment {
             } else {
                 uiEventType = UiEventType.PAUSE;
             }
-            if (song != null) {
+            if (song != null && getContext() != null) {
                 UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, getContext());
                 FirebaseIOUtils.saveUiEvent(uiEvent);
             }

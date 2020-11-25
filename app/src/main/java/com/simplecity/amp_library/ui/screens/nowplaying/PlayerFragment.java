@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -48,6 +49,7 @@ import com.simplecity.amp_library.glide.palette.ColorSet;
 import com.simplecity.amp_library.glide.palette.ColorSetTranscoder;
 import com.simplecity.amp_library.model.Playlist;
 import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.playback.MusicService;
 import com.simplecity.amp_library.playback.QueueManager;
 import com.simplecity.amp_library.rx.UnsafeAction;
 import com.simplecity.amp_library.rx.UnsafeConsumer;
@@ -236,8 +238,7 @@ public class PlayerFragment extends BaseFragment implements
                 } else {
                     uiEventType = UiEventType.PAUSE;
                 }
-                UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, getContext());
-                FirebaseIOUtils.saveUiEvent(uiEvent);
+                newUiEvent(song, uiEventType, getContext());
                 return Unit.INSTANCE;
             }));
         }
@@ -328,11 +329,24 @@ public class PlayerFragment extends BaseFragment implements
 
             disposables.add(sharedSeekBarEvents.subscribe(
                     seekBarChangeEvent -> {
+                        UiEventType uiEventType = null;
                         if (seekBarChangeEvent instanceof SeekBarStartChangeEvent) {
+                            uiEventType = UiEventType.SEEK_START;
                             isSeeking = true;
                         } else if (seekBarChangeEvent instanceof SeekBarStopChangeEvent) {
+//                              seek position for SEEK_STOP will always match SEEK_START in the case
+//                              of skipping seek positions using the seek bar. Works fine as intended
+//                              to when dragging the seekbar.
+                            uiEventType = UiEventType.SEEK_STOP;
                             isSeeking = false;
                         }
+                        Song song = MusicServiceConnectionUtils.getSong();
+                        if (uiEventType != null)
+//                            called  MusicServiceConnectionUtils.getPosition() here to fix a lag
+//                            2 -3 seconds in the seekPosition value when the same function is called
+//                            from EventUtils.newUiEvent()
+                            newUiEvent(song, uiEventType, getContext(), MusicServiceConnectionUtils
+                                    .getPosition());
                     },
                     error -> LogUtils.logException(TAG, "Error in seek change event", error))
             );
@@ -721,6 +735,16 @@ public class PlayerFragment extends BaseFragment implements
                 Aesthetic.get(getContext()).colorAccent(),
                 Pair::new
         ).map(pair -> ColorSet.Companion.fromPrimaryAccentColors(getContext(), pair.first, pair.second));
+    }
+
+    private void newUiEvent(Song song, UiEventType uiEventType, Context context, long position){
+        UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, context, position);
+        FirebaseIOUtils.saveUiEvent(uiEvent);
+    }
+
+    private void newUiEvent(Song song, UiEventType uiEventType, Context context){
+        UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, context);
+        FirebaseIOUtils.saveUiEvent(uiEvent);
     }
 
     // SongMenuContract.View implementation
