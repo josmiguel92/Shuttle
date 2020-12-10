@@ -12,10 +12,12 @@ interface Event
  * [nanoTime] - Stores the  value of the running JVM's time source in nanoseconds.
  * [seekPositionMs] - Stores the seek position of the track.
  * [song] - Song on which the action was performed.
+ * [audioData] - Volume data of the phone.
  */
 {
     val currentTimeMs: Long
     val nanoTime: Long
     val seekPositionMs: Long
     val song: SongData?
+    val audioData: AudioData?
 }

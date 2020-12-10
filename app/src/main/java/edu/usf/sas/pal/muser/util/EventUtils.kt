@@ -1,7 +1,7 @@
 package edu.usf.sas.pal.muser.util
 
 import android.content.Context
-import android.util.Log
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Genre
@@ -9,7 +9,11 @@ import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.utils.MusicServiceConnectionUtils
 import edu.usf.sas.pal.muser.model.*
 
+
 object EventUtils {
+
+    private const val TAG = "EventUtils"
+
     /**
      * Function to populate the PlayerEvent data class.
      * @param song - The song for which the event occurred.
@@ -22,9 +26,10 @@ object EventUtils {
         val currentTimeMS = System.currentTimeMillis()
         val nanoTime = System.nanoTime()
         val songData = SongData(song, context)
+        val audioData = AudioDeviceUtils.getAudioData(context)
         val seekPositionMs = MusicServiceConnectionUtils.getPosition()
         return PlayerEvent(capturedEvent, currentTimeMS, nanoTime, seekPositionMs,
-                songData)
+                songData, audioData = audioData)
     }
 
     /**
@@ -41,12 +46,14 @@ object EventUtils {
         val currentTimeMS = System.currentTimeMillis()
         val nanoTime = System.nanoTime()
         val songData = SongData(song, context)
+        val audioData = AudioDeviceUtils.getAudioData(context)
         var seekPositionMs = seekPosition
         if (seekPositionMs == Long.MAX_VALUE) {
             seekPositionMs = MusicServiceConnectionUtils.getPosition()
         }
         return UiEvent(uiEventType = capturedUiAction, currentTimeMs = currentTimeMS,
-                nanoTime = nanoTime, seekPositionMs = seekPositionMs, song = songData)
+                nanoTime = nanoTime, seekPositionMs = seekPositionMs, song = songData,
+                audioData = audioData)
     }
 
     /**
@@ -69,8 +76,9 @@ object EventUtils {
         val currentTimeMS = System.currentTimeMillis()
         val nanoTime = System.nanoTime()
         val albumData = AlbumData(album)
+        val audioData = AudioDeviceUtils.getAudioData(ShuttleApplication.get())
         return UiEvent(uiEventType = capturedUiAction, currentTimeMs = currentTimeMS,
-                nanoTime = nanoTime, album = albumData)
+                nanoTime = nanoTime, album = albumData, audioData = audioData)
     }
 
     /**
@@ -91,8 +99,9 @@ object EventUtils {
             albums.add(albumData)
         }
         val albumArtistData = AlbumArtistData(albumArtist, albums)
+        val audioData = AudioDeviceUtils.getAudioData(ShuttleApplication.get())
         return UiEvent(uiEventType = capturedUiAction, currentTimeMs = currentTimeMS,
-                nanoTime = nanoTime, albumArtist = albumArtistData)
+                nanoTime = nanoTime, albumArtist = albumArtistData, audioData = audioData)
     }
 
     /**
@@ -106,7 +115,17 @@ object EventUtils {
         val currentTimeMS = System.currentTimeMillis()
         val nanoTime = System.nanoTime()
         val genreData = GenreData(genre)
+        val audioData = AudioDeviceUtils.getAudioData(ShuttleApplication.get())
         return UiEvent(uiEventType = capturedUiAction, currentTimeMs = currentTimeMS,
-                nanoTime = nanoTime, genre = genreData)
+                nanoTime = nanoTime, genre = genreData, audioData = audioData)
+    }
+
+    @JvmStatic
+    fun newUiVolumeEvent(capturedUiAction: UiEventType, context: Context): UiEvent{
+        val currentTimeMS = System.currentTimeMillis()
+        val nanoTime = System.nanoTime()
+        val audioData = AudioDeviceUtils.getAudioData(context)
+        return UiEvent(uiEventType = capturedUiAction, currentTimeMs = currentTimeMS,
+                nanoTime = nanoTime, audioData = audioData)
     }
 }
