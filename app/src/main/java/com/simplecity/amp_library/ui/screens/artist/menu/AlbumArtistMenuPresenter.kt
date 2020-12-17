@@ -19,6 +19,7 @@ import com.simplecity.amp_library.utils.Operators
 import com.simplecity.amp_library.utils.extensions.getSongs
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
 import com.simplecity.amp_library.utils.sorting.SortManager
+import edu.usf.sas.pal.muser.model.UiEvent
 import edu.usf.sas.pal.muser.model.UiEventType
 import edu.usf.sas.pal.muser.util.EventUtils
 import edu.usf.sas.pal.muser.util.FirebaseIOUtils
@@ -54,6 +55,9 @@ class AlbumArtistMenuPresenter @Inject constructor(
                 view?.onSongsAddedToPlaylist(playlist, numSongs)
             }
         }
+        albumArtists.forEach {
+            newUiAlbumArtistEvent(it, UiEventType.ADD_TO_PLAYLIST_ALBUM_ARTIST)
+        }
     }
 
     override fun addArtistsToQueue(albumArtists: List<AlbumArtist>) {
@@ -70,11 +74,14 @@ class AlbumArtistMenuPresenter @Inject constructor(
                 view?.onSongsAddedToQueue(numSongs)
             }
         }
+        albumArtists.forEach{
+            newUiAlbumArtistEvent(it, UiEventType.PLAY_ALBUM_ARTIST_NEXT)
+        }
     }
 
     override fun play(albumArtist: AlbumArtist) {
         mediaManager.playAll(albumArtist.getSongsSingle(songsRepository)) { view?.onPlaybackFailed() }
-        newUiAlbumArtistEvent(albumArtist)
+        newUiAlbumArtistEvent(albumArtist, UiEventType.PLAY_ALBUM_ARTIST)
     }
 
     override fun editTags(albumArtist: AlbumArtist) {
@@ -107,6 +114,7 @@ class AlbumArtistMenuPresenter @Inject constructor(
             view?.onPlaybackFailed()
             Unit
         }
+        newUiAlbumArtistEvent(albumArtist, UiEventType.ALBUM_SHUFFLE)
     }
 
     override fun <T> transform(src: Single<List<T>>, dst: (List<T>) -> Unit) {
@@ -137,8 +145,8 @@ class AlbumArtistMenuPresenter @Inject constructor(
         const val TAG = "AlbumMenuContract"
     }
 
-    private fun newUiAlbumArtistEvent(albumArtist: AlbumArtist){
-        val uiEvent = EventUtils.newUiAlbumArtistEvent(albumArtist, UiEventType.PLAY_ALBUM_ARTIST)
+    private fun newUiAlbumArtistEvent(albumArtist: AlbumArtist, uiEventType: UiEventType){
+        val uiEvent = EventUtils.newUiAlbumArtistEvent(albumArtist, uiEventType)
         FirebaseIOUtils.saveUiEvent(uiEvent)
     }
 

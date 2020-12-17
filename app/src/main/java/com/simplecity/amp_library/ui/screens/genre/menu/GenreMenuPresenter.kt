@@ -40,6 +40,7 @@ class GenreMenuPresenter @Inject constructor(
                 view?.onSongsAddedToPlaylist(playlist, numSongs)
             }
         }
+        newUiGenreEvent(genre, UiEventType.ADD_TO_PLAYLIST_GENRE)
     }
 
     override fun addToQueue(genre: Genre) {
@@ -51,13 +52,14 @@ class GenreMenuPresenter @Inject constructor(
     }
 
     override fun play(genre: Genre) {
-        newUiGenreEvent(genre)
+        newUiGenreEvent(genre, UiEventType.PLAY_GENRE)
         mediaManager.playAll(genre.getSongs(context)) {
             view?.onPlaybackFailed()
         }
     }
 
     override fun playNext(genre: Genre) {
+        newUiGenreEvent(genre, UiEventType.PLAY_GENRE_NEXT)
         getSongs(genre) { songs ->
             mediaManager.playNext(songs) { numSongs ->
                 view?.onSongsAddedToQueue(numSongs)
@@ -76,8 +78,8 @@ class GenreMenuPresenter @Inject constructor(
                 )
         )
     }
-    private fun newUiGenreEvent(genre: Genre){
-        val uiEvent = EventUtils.newUiGenreEvent(genre, UiEventType.PLAY_GENRE)
+    private fun newUiGenreEvent(genre: Genre, uiEventType: UiEventType){
+        val uiEvent = EventUtils.newUiGenreEvent(genre, uiEventType)
         FirebaseIOUtils.saveUiEvent(uiEvent)
     }
 

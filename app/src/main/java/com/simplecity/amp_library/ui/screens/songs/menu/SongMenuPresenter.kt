@@ -14,6 +14,7 @@ import com.simplecity.amp_library.ui.screens.songs.menu.SongMenuContract.View
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.RingtoneManager
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
+import edu.usf.sas.pal.muser.model.UiEvent
 import edu.usf.sas.pal.muser.model.UiEventType
 import edu.usf.sas.pal.muser.util.EventUtils
 import edu.usf.sas.pal.muser.util.FirebaseIOUtils
@@ -41,11 +42,14 @@ open class SongMenuPresenter @Inject constructor(
     override fun addToPlaylist(context: Context, playlist: Playlist, songs: List<Song>) {
         if (playlist.type == Playlist.Type.FAVORITES) {
             songs.forEach {
-                newUiEvent(it)
+                newUiEvent(it, UiEventType.FAVORITE)
             }
         }
         playlistManager.addToPlaylist(context, playlist, songs) { numSongs ->
             view?.onSongsAddedToPlaylist(playlist, numSongs)
+        }
+        songs.forEach {
+            newUiEvent(it, UiEventType.ADD_TO_PLAYLIST)
         }
     }
 
@@ -58,6 +62,9 @@ open class SongMenuPresenter @Inject constructor(
     override fun playNext(songs: List<Song>) {
         mediaManager.playNext(songs) { numSongs ->
             view?.onSongsAddedToQueue(numSongs)
+        }
+        songs.forEach {
+            newUiEvent(it, UiEventType.PLAY_NEXT)
         }
     }
 
@@ -141,8 +148,8 @@ open class SongMenuPresenter @Inject constructor(
         const val TAG = "SongMenuPresenter"
     }
 
-    private fun newUiEvent(song: Song){
-        val uiEvent = EventUtils.newUiEvent(song, UiEventType.FAVORITE, ShuttleApplication.get())
+    private fun newUiEvent(song: Song, uiEventType: UiEventType){
+        val uiEvent = EventUtils.newUiEvent(song, uiEventType, ShuttleApplication.get())
         FirebaseIOUtils.saveUiEvent(uiEvent)
     }
 }
