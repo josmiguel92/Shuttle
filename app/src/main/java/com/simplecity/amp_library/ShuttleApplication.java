@@ -23,6 +23,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.simplecity.amp_library.data.Repository;
 import com.simplecity.amp_library.di.app.DaggerAppComponent;
 import com.simplecity.amp_library.model.Genre;
+import com.simplecity.amp_library.model.Playlist;
 import com.simplecity.amp_library.model.Query;
 import com.simplecity.amp_library.model.UserSelectedArtwork;
 import com.simplecity.amp_library.sql.SqlUtils;
@@ -36,6 +37,7 @@ import com.simplecity.amp_library.utils.LogUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
 import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.extensions.GenreExtKt;
+import com.simplecityapps.recycler_adapter.adapter.ViewModelAdapter;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 import com.uber.rxdogtag.RxDogTag;
@@ -79,6 +81,12 @@ public class ShuttleApplication extends DaggerApplication {
 
     private RefWatcher refWatcher;
 
+    private static ShuttleApplication instance;
+
+    public static synchronized ShuttleApplication getInstance() {
+        return instance;
+    }
+
     public HashMap<String, UserSelectedArtwork> userSelectedArtwork = new HashMap<>();
 
     private static Logger jaudioTaggerLogger1 = Logger.getLogger("org.jaudiotagger.audio");
@@ -104,6 +112,7 @@ public class ShuttleApplication extends DaggerApplication {
         super.onCreate();
 
         mApp = this;
+        instance = this;
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         DaggerAppComponent.builder()
                 .create(this)

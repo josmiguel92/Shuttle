@@ -1,20 +1,27 @@
 package com.simplecity.amp_library.ui.screens.songs.menu
 
 import android.content.Context
+import android.util.Log
+import com.annimon.stream.Stream
+import com.annimon.stream.function.Predicate
 import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.data.Repository.AlbumArtistsRepository
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.playback.MediaManager
+import com.simplecity.amp_library.rx.UnsafeConsumer
 import com.simplecity.amp_library.ui.common.Presenter
+import com.simplecity.amp_library.ui.modelviews.SongView
 import com.simplecity.amp_library.ui.screens.drawer.NavigationEventRelay
 import com.simplecity.amp_library.ui.screens.drawer.NavigationEventRelay.NavigationEvent
+import com.simplecity.amp_library.ui.screens.main.MainController
+import com.simplecity.amp_library.ui.screens.playlist.detail.PlaylistDetailFragment
 import com.simplecity.amp_library.ui.screens.songs.menu.SongMenuContract.View
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.RingtoneManager
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
-import edu.usf.sas.pal.muser.model.UiEvent
+import com.simplecityapps.recycler_adapter.model.ViewModel
 import edu.usf.sas.pal.muser.model.UiEventType
 import edu.usf.sas.pal.muser.util.EventUtils
 import edu.usf.sas.pal.muser.util.FirebaseIOUtils
@@ -130,6 +137,28 @@ open class SongMenuPresenter @Inject constructor(
                 { genre -> navigationEventRelay.sendEvent(NavigationEvent(NavigationEvent.Type.GO_TO_GENRE, genre, true)) },
                 { error -> LogUtils.logException(TAG, "Failed to retrieve genre", error) }
             ))
+    }
+
+    override fun removeSong(mainController: MainController, context: Context, song: Song) {
+
+        val playlistDetailFragment = mainController
+                .childFragmentManager
+                .findFragmentByTag("PlaylistDetailFragment") as PlaylistDetailFragment?
+
+        if (playlistDetailFragment != null) {
+            val songView: ViewModel<*> = Stream.of<ViewModel<*>>(playlistDetailFragment.adapter.items)
+                    .filter { value: ViewModel<*>? -> value is SongView && (value).song === song }
+                    .findFirst().orElse(null)
+            val index: Int = playlistDetailFragment.adapter.items.indexOf(songView)
+            playlistDetailFragment.playlist.removeSong(song) { success: Boolean? ->
+                if (!success!!) {
+                    // Playlist removal failed, re-insert adapter item
+                    playlistDetailFragment.adapter.addItem(index, songView)
+                } else{
+                    newUiEvent(song, UiEventType.REMOVE_FROM_PLAYLIST)
+                }
+            }
+        }
     }
 
     override fun <T> transform(src: Single<List<T>>, dst: (List<T>) -> Unit) {

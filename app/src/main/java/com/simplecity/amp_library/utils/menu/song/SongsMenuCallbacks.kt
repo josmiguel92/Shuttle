@@ -3,6 +3,7 @@ package com.simplecity.amp_library.utils.menu.song
 import android.content.Context
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
+import com.simplecity.amp_library.ui.screens.main.MainController
 import io.reactivex.Single
 
 interface SongsMenuCallbacks {
@@ -32,6 +33,8 @@ interface SongsMenuCallbacks {
     fun goToAlbum(song: Song)
 
     fun goToGenre(song: Song)
+
+    fun removeSong(mainController: MainController, context: Context, song: Song)
 
     fun <T> transform(src: Single<List<T>>, dst: (List<T>) -> Unit)
 }

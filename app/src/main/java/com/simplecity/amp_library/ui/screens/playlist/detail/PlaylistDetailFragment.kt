@@ -47,6 +47,7 @@ import com.simplecity.amp_library.ui.modelviews.SelectableViewModel
 import com.simplecity.amp_library.ui.modelviews.SongView
 import com.simplecity.amp_library.ui.modelviews.SubheaderView
 import com.simplecity.amp_library.ui.screens.drawer.DrawerLockManager
+import com.simplecity.amp_library.ui.screens.main.MainController
 import com.simplecity.amp_library.ui.screens.playlist.dialog.CreatePlaylistDialog
 import com.simplecity.amp_library.ui.screens.playlist.dialog.DeletePlaylistConfirmationDialog
 import com.simplecity.amp_library.ui.screens.playlist.dialog.M3uPlaylistDialog
@@ -98,10 +99,6 @@ class PlaylistDetailFragment :
     DrawerLockManager.DrawerLock,
     ContextualToolbarHost {
 
-    private lateinit var playlist: Playlist
-
-    private lateinit var adapter: ViewModelAdapter
-
     private var disposables = CompositeDisposable()
 
     private var collapsingToolbarTextColor: ColorStateList? = null
@@ -114,6 +111,12 @@ class PlaylistDetailFragment :
     private var contextualToolbarHelper: ContextualToolbarHelper<Single<List<Song>>>? = null
 
     private var isFirstLoad = true
+
+    lateinit var mainController: MainController
+
+    lateinit var playlist: Playlist
+
+    lateinit var adapter: ViewModelAdapter
 
     private lateinit var presenter: PlaylistDetailPresenter
 
@@ -149,6 +152,7 @@ class PlaylistDetailFragment :
 
         adapter = ViewModelAdapter()
 
+        mainController = parentFragment as MainController
         // Todo: On playlist deleted
         //Toast.makeText(getContext(), R.string.playlist_deleted_message, Toast.LENGTH_SHORT).show();
         //getNavigationController().popViewController();
@@ -546,7 +550,7 @@ class PlaylistDetailFragment :
         override fun onSongOverflowClick(position: Int, v: View, song: Song) {
             val popupMenu = PopupMenu(v.context, v)
             SongMenuUtils.setupSongMenu(popupMenu, playlist.canEdit, true, playlistMenuHelper)
-            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(context!!, song, presenter))
+            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(mainController, context!!, song, presenter))
             popupMenu.show()
         }
 
@@ -645,12 +649,19 @@ class PlaylistDetailFragment :
 
         private const val ARG_PLAYLIST = "playlist"
 
+        private lateinit var instance: PlaylistDetailFragment
+
         fun newInstance(playlist: Playlist): PlaylistDetailFragment {
             val args = Bundle()
             args.putSerializable(ARG_PLAYLIST, playlist)
             val fragment = PlaylistDetailFragment()
             fragment.arguments = args
+            instance = fragment
             return fragment
+        }
+
+        fun getInstance(): PlaylistDetailFragment {
+            return instance
         }
     }
 }
