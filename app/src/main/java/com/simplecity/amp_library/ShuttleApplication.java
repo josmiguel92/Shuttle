@@ -4,10 +4,13 @@ import android.Manifest;
 import android.content.ContentProviderOperation;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaRouter;
+import android.os.Build;
 import android.os.Environment;
+import android.os.PowerManager;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -428,6 +431,25 @@ public class ShuttleApplication extends DaggerApplication {
     public void newUiEvent(UiEventType uiEventType){
         UiEvent uiEvent = EventUtils.newUiVolumeEvent(uiEventType, mApp);
         FirebaseIOUtils.saveUiEvent(uiEvent);
+    }
+
+    /**
+     * Return whether the given application package name is on the device's power whitelist.
+     * Apps can be placed on the whitelist through the settings UI invoked by
+     * {@link android.provider.Settings#ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS}.
+     */
+    public static Boolean isIgnoringBatteryOptimizations(Context applicationContext) {
+        PowerManager pm = (PowerManager) applicationContext.getSystemService(Context.POWER_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                pm.isIgnoringBatteryOptimizations(applicationContext.getPackageName())) {
+            return true;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return null;
+        }
+
+        return false;
     }
 
     private MediaRouter.Callback createMediaRouterCallback(){
