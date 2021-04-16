@@ -12,6 +12,7 @@ import android.widget.Toast
 import com.bumptech.glide.RequestManager
 import com.simplecity.amp_library.R
 import com.simplecity.amp_library.R.string
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
@@ -29,6 +30,7 @@ import com.simplecity.amp_library.ui.modelviews.EmptyView
 import com.simplecity.amp_library.ui.modelviews.HorizontalRecyclerView
 import com.simplecity.amp_library.ui.modelviews.SuggestedHeaderView
 import com.simplecity.amp_library.ui.modelviews.SuggestedSongView
+import com.simplecity.amp_library.ui.screens.main.MainController
 import com.simplecity.amp_library.ui.screens.playlist.detail.PlaylistDetailFragment
 import com.simplecity.amp_library.ui.screens.playlist.dialog.CreatePlaylistDialog
 import com.simplecity.amp_library.ui.screens.suggested.SuggestedPresenter.SuggestedData
@@ -48,6 +50,9 @@ import com.simplecityapps.recycler_adapter.adapter.ViewModelAdapter
 import com.simplecityapps.recycler_adapter.model.ViewModel
 import com.simplecityapps.recycler_adapter.recyclerview.RecyclerListener
 import dagger.android.support.AndroidSupportInjection
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.disposables.CompositeDisposable
 import java.util.ArrayList
 import javax.inject.Inject
@@ -182,6 +187,9 @@ class SuggestedFragment :
     inner class SongClickListener(val songs: List<Song>) : SuggestedSongView.ClickListener {
 
         override fun onSongClick(song: Song, holder: SuggestedSongView.ViewHolder) {
+            val uiEvent = EventUtils.newUiEvent(song, UiEventType.PLAY,
+                 ShuttleApplication.get())
+            FirebaseIOUtils.saveUiEvent(uiEvent)
             mediaManager.playAll(songs, songs.indexOf(song), true) {
                 onPlaybackFailed()
             }
@@ -190,7 +198,7 @@ class SuggestedFragment :
         override fun onSongOverflowClicked(v: View, position: Int, song: Song) {
             val popupMenu = PopupMenu(context!!, v)
             SongMenuUtils.setupSongMenu(popupMenu, false, true, playlistMenuHelper)
-            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(song, presenter))
+            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(null, context!!, song, presenter))
             popupMenu.show()
         }
     }
@@ -209,7 +217,7 @@ class SuggestedFragment :
     override fun onAlbumOverflowClicked(v: View, album: Album) {
         val menu = PopupMenu(context!!, v)
         AlbumMenuUtils.setupAlbumMenu(menu, playlistMenuHelper, true)
-        menu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(album, presenter))
+        menu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(context!!, album, presenter))
         menu.show()
     }
 

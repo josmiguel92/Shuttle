@@ -3,15 +3,14 @@ package dependencies
 object Dependencies {
 
     const val minSdk = 21
-    const val targetSdk = 28
-    const val compileSdk = 28
+    const val targetSdk = 29
+    const val compileSdk = 29
 
     object Versions {
         const val nanoHttp = "2.3.1"
-        const val crashlytics = "2.9.9"
         const val dashClockApi = "2.0.0"
         const val fastScroll = "1.0.20"
-        const val glide = "3.8.0-SNAPSHOT"
+        const val glide = "3.8.0"
         const val glideOkhttp = "1.4.0@aar"
         const val materialDialogs = "0.9.6.0"
         const val permiso = "0.3.0"
@@ -22,6 +21,7 @@ object Dependencies {
         const val daggerAssistedInject = "0.3.2"
         const val expandableRecyclerView = "3.0.0-RC1"
         const val billing = "1.2"
+        const val apache = "3.0"
     }
 
     // Kotlin
@@ -32,8 +32,6 @@ object Dependencies {
     // NanoHttp - https://github.com/NanoHttpd/nanohttpd (Various)
     const val nanoHttp = "org.nanohttpd:nanohttpd-webserver:${Versions.nanoHttp}"
 
-    // Crashlytics - https://fabric.io/kits/android/crashlytics
-    const val crashlytics = "com.crashlytics.sdk.android:crashlytics:${Versions.crashlytics}"
 
     // Dashclock - https://git.io/vix9g (Roman Nurik)
     const val dashClockApi = "com.google.android.apps.dashclock:dashclock-api:${Versions.dashClockApi}"
@@ -77,6 +75,9 @@ object Dependencies {
     // In app purchases
     const val billing = "com.android.billingclient:billing:${Versions.billing}"
 
+    // Hashcodebuilder
+    const val apache= "org.apache.commons:commons-lang3:${Versions.apache}"
+
     object Plugins {
 
         object Versions {
@@ -106,6 +107,8 @@ object Dependencies {
             const val firebaseRemoteConfig = "16.1.0"
             const val constraintLayout = "2.0.0-alpha3"
             const val chromeCastFramework = "16.1.0"
+            const val firebaseFireStore = "16.0.0"
+            const val firebaseAuth = "16.1.0"
         }
 
         const val cardView = "com.android.support:cardview-v7:${Versions.supportLib}"
@@ -115,6 +118,8 @@ object Dependencies {
         const val supportv4 = "com.android.support:support-v4:${Versions.supportLib}"
         const val firebaseCore = "com.google.firebase:firebase-core:${Versions.firebaseCore}"
         const val firebaseRemoteConfig = "com.google.firebase:firebase-config:${Versions.firebaseRemoteConfig}"
+        const val firebaseFireStore = "com.google.firebase:firebase-firestore:${Versions.firebaseFireStore}"
+        const val firebaseAuth = "com.google.firebase:firebase-auth:${Versions.firebaseAuth}"
         const val appcompat = "com.android.support:appcompat-v7:${Versions.supportLib}"
         const val mediarouter = "com.android.support:mediarouter-v7:${Versions.supportLib}"
         const val constraintLayout = "com.android.support.constraint:constraint-layout:${Versions.constraintLayout}"

@@ -4,9 +4,13 @@ import android.Manifest;
 import android.content.ContentProviderOperation;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.MediaRouter;
+import android.os.Build;
 import android.os.Environment;
+import android.os.PowerManager;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -16,14 +20,13 @@ import android.text.TextUtils;
 import android.util.Log;
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
-import com.crashlytics.android.Crashlytics;
-import com.crashlytics.android.answers.Answers;
-import com.crashlytics.android.core.CrashlyticsCore;
+
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.simplecity.amp_library.data.Repository;
 import com.simplecity.amp_library.di.app.DaggerAppComponent;
 import com.simplecity.amp_library.model.Genre;
+import com.simplecity.amp_library.model.Playlist;
 import com.simplecity.amp_library.model.Query;
 import com.simplecity.amp_library.model.UserSelectedArtwork;
 import com.simplecity.amp_library.sql.SqlUtils;
@@ -37,12 +40,17 @@ import com.simplecity.amp_library.utils.LogUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
 import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.extensions.GenreExtKt;
+import com.simplecityapps.recycler_adapter.adapter.ViewModelAdapter;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 import com.uber.rxdogtag.RxDogTag;
 import dagger.android.AndroidInjector;
 import dagger.android.DaggerApplication;
-import io.fabric.sdk.android.Fabric;
+import edu.usf.sas.pal.muser.model.UiEvent;
+import edu.usf.sas.pal.muser.model.UiEventType;
+import edu.usf.sas.pal.muser.util.EventUtils;
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils;
+import edu.usf.sas.pal.muser.util.AudioDeviceUtils;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
@@ -52,10 +60,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.inject.Inject;
+
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
@@ -70,9 +80,15 @@ public class ShuttleApplication extends DaggerApplication {
 
     private static final String TAG = "ShuttleApplication";
 
-    private boolean isUpgraded;
+    private boolean isUpgraded = true;
 
     private RefWatcher refWatcher;
+
+    private static ShuttleApplication instance;
+
+    public static synchronized ShuttleApplication getInstance() {
+        return instance;
+    }
 
     public HashMap<String, UserSelectedArtwork> userSelectedArtwork = new HashMap<>();
 
@@ -88,10 +104,19 @@ public class ShuttleApplication extends DaggerApplication {
     @Inject
     SettingsManager settingsManager;
 
+    private SharedPreferences mPrefs;
+
+    private static ShuttleApplication mApp;
+
+    int currentVolume = 0;
+
     @Override
     public void onCreate() {
         super.onCreate();
 
+        mApp = this;
+        instance = this;
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         DaggerAppComponent.builder()
                 .create(this)
                 .inject(this);
@@ -101,6 +126,11 @@ public class ShuttleApplication extends DaggerApplication {
             // You should not init your app in this process.
             return;
         }
+
+        // TODO
+        //  check for email address validity
+        Log.d(TAG, "onCreate called");
+        //  else ask email once again
 
         // Todo: Remove for production builds. Useful for tracking down crashes in beta.
         RxDogTag.install();
@@ -113,16 +143,7 @@ public class ShuttleApplication extends DaggerApplication {
         // workaround to fix InputMethodManager leak as suggested by LeakCanary lib
         InputMethodManagerLeaks.fixFocusedViewLeak(this);
 
-        //Crashlytics
-        CrashlyticsCore crashlyticsCore = new CrashlyticsCore.Builder()
-                .disabled(BuildConfig.DEBUG)
-                .build();
 
-        Fabric.with(this,
-                new Crashlytics.Builder()
-                        .core(crashlyticsCore)
-                        .answers(new Answers())
-                        .build());
 
         // Firebase
         FirebaseApp.initializeApp(this);
@@ -196,6 +217,13 @@ public class ShuttleApplication extends DaggerApplication {
                 .onErrorComplete()
                 .subscribeOn(Schedulers.io())
                 .subscribe();
+
+        currentVolume = AudioDeviceUtils.getVolumeData(mApp).getCurrentVolumeLevel();
+        MediaRouter mediaRouter = (MediaRouter) getApplicationContext().getSystemService(MEDIA_ROUTER_SERVICE);
+        if (mediaRouter != null) {
+            mediaRouter.addCallback(MediaRouter.ROUTE_TYPE_USER, createMediaRouterCallback(),
+                    MediaRouter.CALLBACK_FLAG_UNFILTERED_EVENTS);
+        }
     }
 
     @Override
@@ -224,8 +252,8 @@ public class ShuttleApplication extends DaggerApplication {
     }
 
     public void setIsUpgraded(boolean isUpgraded) {
-        this.isUpgraded = isUpgraded;
-        analyticsManager.setIsUpgraded(isUpgraded);
+//        this.isUpgraded = isUpgraded;
+//        analyticsManager.setIsUpgraded(isUpgraded);
     }
 
     public boolean getIsUpgraded() {
@@ -388,5 +416,77 @@ public class ShuttleApplication extends DaggerApplication {
                 .penaltyLog()
                 .penaltyFlashScreen()
                 .build());
+    }
+
+
+
+    public static ShuttleApplication get() {
+        return mApp;
+    }
+
+    public static SharedPreferences getPrefs() {
+        return get().mPrefs;
+    }
+
+    public void newUiEvent(UiEventType uiEventType){
+        UiEvent uiEvent = EventUtils.newUiVolumeEvent(uiEventType, mApp);
+        FirebaseIOUtils.saveUiEvent(uiEvent);
+    }
+
+    /**
+     * Return whether the given application package name is on the device's power whitelist.
+     * Apps can be placed on the whitelist through the settings UI invoked by
+     * {@link android.provider.Settings#ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS}.
+     */
+    public static Boolean isIgnoringBatteryOptimizations(Context applicationContext) {
+        PowerManager pm = (PowerManager) applicationContext.getSystemService(Context.POWER_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                pm.isIgnoringBatteryOptimizations(applicationContext.getPackageName())) {
+            return true;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return null;
+        }
+
+        return false;
+    }
+
+    private MediaRouter.Callback createMediaRouterCallback(){
+        return new MediaRouter.Callback() {
+            @Override
+            public void onRouteSelected(MediaRouter router, int type, MediaRouter.RouteInfo info) {}
+
+            @Override
+            public void onRouteUnselected(MediaRouter router, int type, MediaRouter.RouteInfo info) {}
+
+            @Override
+            public void onRouteAdded(MediaRouter router, MediaRouter.RouteInfo info) {}
+
+            @Override
+            public void onRouteRemoved(MediaRouter router, MediaRouter.RouteInfo info) {}
+
+            @Override
+            public void onRouteChanged(MediaRouter router, MediaRouter.RouteInfo info) {}
+
+            @Override
+            public void onRouteGrouped(MediaRouter router, MediaRouter.RouteInfo info, MediaRouter.RouteGroup group, int index) {}
+
+            @Override
+            public void onRouteUngrouped(MediaRouter router, MediaRouter.RouteInfo info, MediaRouter.RouteGroup group) {}
+
+            @Override
+            public void onRouteVolumeChanged(MediaRouter router, MediaRouter.RouteInfo info) {
+                Log.d(TAG, "onRouteVolumeChanged: " + currentVolume + " " + info.getVolume());
+                if (info.getVolume() > currentVolume){
+                    newUiEvent(UiEventType.VOLUME_UP);
+                } else if (info.getVolume() == currentVolume){
+                    newUiEvent(UiEventType.VOLUME_NO_CHANGE);
+                } else {
+                    newUiEvent(UiEventType.VOLUME_DOWN);
+                }
+                currentVolume = info.getVolume();
+            }
+        };
     }
 }

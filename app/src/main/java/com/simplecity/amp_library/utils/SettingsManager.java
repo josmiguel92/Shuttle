@@ -22,6 +22,11 @@ public class SettingsManager extends BaseSettingsManager {
         super(sharedPreferences);
     }
 
+    private static SettingsManager instance;
+
+    public static SettingsManager getInstance() {
+        return instance;
+    }
     // Support
     public static String KEY_PREF_CHANGELOG = "pref_changelog";
     public static String KEY_PREF_FAQ = "pref_faq";
@@ -41,6 +46,8 @@ public class SettingsManager extends BaseSettingsManager {
     public static String KEY_PREF_NAV_BAR = "pref_nav_bar";
     public static String KEY_PREF_PALETTE = "pref_theme_use_palette";
     public static String KEY_PREF_PALETTE_NOW_PLAYING_ONLY = "pref_theme_use_palette_now_playing";
+    public static String KEY_PREF_SET_DEFAULT_THEME = "pref_default_theme";
+
 
     // Artwork
     public static String KEY_PREF_DOWNLOAD_ARTWORK = "pref_download_artwork";

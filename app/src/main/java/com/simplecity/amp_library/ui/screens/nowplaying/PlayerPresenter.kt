@@ -11,10 +11,14 @@ import com.simplecity.amp_library.playback.constants.InternalIntents
 import com.simplecity.amp_library.ui.common.Presenter
 import com.simplecity.amp_library.ui.screens.songs.menu.SongMenuPresenter
 import com.simplecity.amp_library.utils.LogUtils
+import com.simplecity.amp_library.utils.MusicServiceConnectionUtils
 import com.simplecity.amp_library.utils.SettingsManager
 import com.simplecity.amp_library.utils.ShuttleUtils
 import com.simplecity.amp_library.utils.menu.song.SongsMenuCallbacks
 import com.simplecity.amp_library.utils.playlists.FavoritesPlaylistManager
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -184,10 +188,12 @@ class PlayerPresenter @Inject constructor(
     }
 
     fun skip() {
+        saveUiEvent(UiEventType.NEXT)
         mediaManager.next()
     }
 
     fun prev(force: Boolean) {
+        saveUiEvent(UiEventType.PREV)
         mediaManager.previous(force)
     }
 
@@ -222,11 +228,13 @@ class PlayerPresenter @Inject constructor(
             val duration = mediaManager.duration
             if (newpos >= duration) {
                 // move to next track
+                saveUiEvent(UiEventType.NEXT)
                 mediaManager.next()
                 startSeekPos -= duration // is OK to go negative
                 newpos -= duration
             }
             if (delta - lastSeekEventTime > 250 || repeatCount < 0) {
+                saveUiEvent(UiEventType.SCAN_FORWARD)
                 mediaManager.seekTo(newpos)
                 lastSeekEventTime = delta
             }
@@ -249,12 +257,14 @@ class PlayerPresenter @Inject constructor(
             var newpos = startSeekPos - delta
             if (newpos < 0) {
                 // move to previous track
+                saveUiEvent(UiEventType.PREV)
                 mediaManager.previous(true)
                 val duration = mediaManager.duration
                 startSeekPos += duration
                 newpos += duration
             }
             if (delta - lastSeekEventTime > 250 || repeatCount < 0) {
+                saveUiEvent(UiEventType.SCAN_BACKWARD)
                 mediaManager.seekTo(newpos)
                 lastSeekEventTime = delta
             }
@@ -295,5 +305,11 @@ class PlayerPresenter @Inject constructor(
     companion object {
 
         private const val TAG = "PlayerPresenter"
+    }
+
+    fun saveUiEvent(uiEventType: UiEventType){
+        val song = MusicServiceConnectionUtils.getSong()
+            val uiEvent = EventUtils.newUiEvent(song!!, uiEventType, context)
+            FirebaseIOUtils.saveUiEvent(uiEvent)
     }
 }

@@ -1,14 +1,16 @@
 package com.simplecity.amp_library.utils.menu.song
 
+import android.content.Context
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
+import com.simplecity.amp_library.ui.screens.main.MainController
 import io.reactivex.Single
 
 interface SongsMenuCallbacks {
 
     fun createPlaylist(songs: List<Song>)
 
-    fun addToPlaylist(playlist: Playlist, songs: List<Song>)
+    fun addToPlaylist(context: Context, playlist: Playlist, songs: List<Song>)
 
     fun addToQueue(songs: List<Song>)
 
@@ -32,6 +34,8 @@ interface SongsMenuCallbacks {
 
     fun goToGenre(song: Song)
 
+    fun removeSong(mainController: MainController, context: Context, song: Song)
+
     fun <T> transform(src: Single<List<T>>, dst: (List<T>) -> Unit)
 }
 
@@ -40,8 +44,8 @@ fun SongsMenuCallbacks.createPlaylist(song: Song) {
     createPlaylist(listOf(song))
 }
 
-fun SongsMenuCallbacks.addToPlaylist(playlist: Playlist, song: Song) {
-    addToPlaylist(playlist, listOf(song))
+fun SongsMenuCallbacks.addToPlaylist(context: Context, playlist: Playlist, song: Song) {
+    addToPlaylist(context, playlist, listOf(song))
 }
 
 fun SongsMenuCallbacks.addToQueue(song: Song) {
@@ -65,8 +69,8 @@ fun SongsMenuCallbacks.createPlaylist(songs: Single<List<Song>>) {
     transform(songs) { createPlaylist(songs) }
 }
 
-fun SongsMenuCallbacks.addToPlaylist(playlist: Playlist, songs: Single<List<Song>>) {
-    transform(songs) { songs -> addToPlaylist(playlist, songs) }
+fun SongsMenuCallbacks.addToPlaylist(context: Context, playlist: Playlist, songs: Single<List<Song>>) {
+    transform(songs) { songs -> addToPlaylist(context, playlist, songs) }
 }
 
 fun SongsMenuCallbacks.addToQueue(songs: Single<List<Song>>) {

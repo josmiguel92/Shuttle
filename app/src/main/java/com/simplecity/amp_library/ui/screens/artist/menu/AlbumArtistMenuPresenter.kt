@@ -1,5 +1,7 @@
 package com.simplecity.amp_library.ui.screens.album.menu
 
+import android.content.Context
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Playlist
@@ -16,6 +18,9 @@ import com.simplecity.amp_library.utils.Operators
 import com.simplecity.amp_library.utils.extensions.getSongs
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
 import com.simplecity.amp_library.utils.sorting.SortManager
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
@@ -37,11 +42,19 @@ class AlbumArtistMenuPresenter @Inject constructor(
         }
     }
 
-    override fun addArtistsToPlaylist(playlist: Playlist, albumArtists: List<AlbumArtist>) {
+    override fun addArtistsToPlaylist(context: Context, playlist: Playlist, albumArtists: List<AlbumArtist>) {
         getSongs(albumArtists) { songs ->
-            playlistManager.addToPlaylist(playlist, songs) { numSongs ->
+            if (playlist.type == Playlist.Type.FAVORITES) {
+                songs.forEach {
+                    newUiEvent(it)
+                }
+            }
+            playlistManager.addToPlaylist(context, playlist, songs) { numSongs ->
                 view?.onSongsAddedToPlaylist(playlist, numSongs)
             }
+        }
+        albumArtists.forEach {
+            newUiAlbumArtistEvent(it, UiEventType.ADD_TO_PLAYLIST_ALBUM_ARTIST)
         }
     }
 
@@ -51,6 +64,9 @@ class AlbumArtistMenuPresenter @Inject constructor(
                 view?.onSongsAddedToQueue(numSongs)
             }
         }
+        albumArtists.forEach {
+            newUiAlbumArtistEvent(it, UiEventType.ADD_TO_QUEUE_ALBUM_ARTIST)
+        }
     }
 
     override fun playArtistsNext(albumArtists: List<AlbumArtist>) {
@@ -59,10 +75,14 @@ class AlbumArtistMenuPresenter @Inject constructor(
                 view?.onSongsAddedToQueue(numSongs)
             }
         }
+        albumArtists.forEach{
+            newUiAlbumArtistEvent(it, UiEventType.PLAY_ALBUM_ARTIST_NEXT)
+        }
     }
 
     override fun play(albumArtist: AlbumArtist) {
         mediaManager.playAll(albumArtist.getSongsSingle(songsRepository)) { view?.onPlaybackFailed() }
+        newUiAlbumArtistEvent(albumArtist, UiEventType.PLAY_ALBUM_ARTIST)
     }
 
     override fun editTags(albumArtist: AlbumArtist) {
@@ -70,6 +90,7 @@ class AlbumArtistMenuPresenter @Inject constructor(
     }
 
     override fun albumArtistInfo(albumArtist: AlbumArtist) {
+        newUiAlbumArtistEvent(albumArtist, UiEventType.ALBUM_ARTIST_BIOGRAPHY)
         view?.presentAlbumArtistInfoDialog(albumArtist)
     }
 
@@ -95,6 +116,7 @@ class AlbumArtistMenuPresenter @Inject constructor(
             view?.onPlaybackFailed()
             Unit
         }
+        newUiAlbumArtistEvent(albumArtist, UiEventType.ARTIST_ALBUM_SHUFFLE)
     }
 
     override fun <T> transform(src: Single<List<T>>, dst: (List<T>) -> Unit) {
@@ -125,4 +147,13 @@ class AlbumArtistMenuPresenter @Inject constructor(
         const val TAG = "AlbumMenuContract"
     }
 
+    private fun newUiAlbumArtistEvent(albumArtist: AlbumArtist, uiEventType: UiEventType){
+        val uiEvent = EventUtils.newUiAlbumArtistEvent(albumArtist, uiEventType)
+        FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
+
+    private fun newUiEvent(song: Song){
+        val uiEvent = EventUtils.newUiEvent(song, UiEventType.FAVORITE, ShuttleApplication.get())
+        FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
 }

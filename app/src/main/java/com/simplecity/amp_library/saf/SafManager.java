@@ -19,8 +19,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.crashlytics.android.Crashlytics;
 import com.simplecity.amp_library.R;
+import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.utils.SettingsManager;
 import dagger.android.support.AndroidSupportInjection;
 import java.io.File;
@@ -228,7 +228,7 @@ public class SafManager {
                 }
             }
         } catch (NoSuchMethodError e) {
-            Crashlytics.log("getExtSdCardPaths() failed. " + e.getMessage());
+            Log.e(TAG, "getExtSdCardPaths() failed. " + e);
         }
         return paths;
     }
@@ -286,6 +286,7 @@ public class SafManager {
                     .title(R.string.saf_access_required_title)
                     .content(R.string.saf_access_required_message)
                     .positiveText(R.string.saf_show_files_button)
+                    .positiveColor(ShuttleApplication.get().getResources().getColor(R.color.colorPrimaryDark))
                     .onPositive((dialog, which) -> {
                         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                         if (intent.resolveActivity(getContext().getPackageManager()) != null) {

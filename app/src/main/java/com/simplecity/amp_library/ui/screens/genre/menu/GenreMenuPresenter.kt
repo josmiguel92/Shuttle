@@ -1,6 +1,7 @@
 package com.simplecity.amp_library.ui.screens.genre.menu
 
 import android.content.Context
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
@@ -10,6 +11,9 @@ import com.simplecity.amp_library.ui.screens.album.menu.AlbumMenuPresenter
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.extensions.getSongs
 import com.simplecity.amp_library.utils.playlists.PlaylistManager
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
@@ -25,12 +29,18 @@ class GenreMenuPresenter @Inject constructor(
         }
     }
 
-    override fun addToPlaylist(playlist: Playlist, genre: Genre) {
+    override fun addToPlaylist(context: Context, playlist: Playlist, genre: Genre) {
         getSongs(genre) { songs ->
-            playlistManager.addToPlaylist(playlist, songs) { numSongs ->
+            if (playlist.type == Playlist.Type.FAVORITES) {
+                songs.forEach {
+                    newUiEvent(it)
+                }
+            }
+            playlistManager.addToPlaylist(context, playlist, songs) { numSongs ->
                 view?.onSongsAddedToPlaylist(playlist, numSongs)
             }
         }
+        newUiGenreEvent(genre, UiEventType.ADD_TO_PLAYLIST_GENRE)
     }
 
     override fun addToQueue(genre: Genre) {
@@ -39,15 +49,18 @@ class GenreMenuPresenter @Inject constructor(
                 view?.onSongsAddedToQueue(numSongs)
             }
         }
+        newUiGenreEvent(genre, UiEventType.ADD_TO_QUEUE_GENRE)
     }
 
     override fun play(genre: Genre) {
+        newUiGenreEvent(genre, UiEventType.PLAY_GENRE)
         mediaManager.playAll(genre.getSongs(context)) {
             view?.onPlaybackFailed()
         }
     }
 
     override fun playNext(genre: Genre) {
+        newUiGenreEvent(genre, UiEventType.PLAY_GENRE_NEXT)
         getSongs(genre) { songs ->
             mediaManager.playNext(songs) { numSongs ->
                 view?.onSongsAddedToQueue(numSongs)
@@ -66,5 +79,13 @@ class GenreMenuPresenter @Inject constructor(
                 )
         )
     }
+    private fun newUiGenreEvent(genre: Genre, uiEventType: UiEventType){
+        val uiEvent = EventUtils.newUiGenreEvent(genre, uiEventType)
+        FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
 
+    private fun newUiEvent(song: Song){
+        val uiEvent = EventUtils.newUiEvent(song, UiEventType.FAVORITE, ShuttleApplication.get())
+        FirebaseIOUtils.saveUiEvent(uiEvent)
+    }
 }

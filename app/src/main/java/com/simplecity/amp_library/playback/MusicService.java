@@ -18,7 +18,7 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.util.Log;
 import android.widget.Toast;
-import com.crashlytics.android.Crashlytics;
+
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.androidauto.MediaIdHelper;
@@ -41,6 +41,10 @@ import com.simplecity.amp_library.utils.SettingsManager;
 import com.simplecity.amp_library.utils.ShuttleUtils;
 import com.simplecity.amp_library.utils.playlists.FavoritesPlaylistManager;
 import dagger.android.AndroidInjection;
+import edu.usf.sas.pal.muser.model.UiEvent;
+import edu.usf.sas.pal.muser.model.UiEventType;
+import edu.usf.sas.pal.muser.util.EventUtils;
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils;
 import io.reactivex.Completable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
@@ -336,6 +340,7 @@ public class MusicService extends MediaBrowserServiceCompat {
         playbackManager.destroy();
 
         dummyNotificationHelper.teardown(this);
+        notificationHelper.tearDown();
 
         disposables.clear();
 
@@ -365,7 +370,7 @@ public class MusicService extends MediaBrowserServiceCompat {
 
                         // Possible solution: (A) Show the Shuttle notification, despite the fact that music isn't playing. Need to customise notification to allow for an empty queue (no current song)
                         // We could try to generate a queue of random songs as well, but there's no guarantee the user has music on their device.
-
+                        newUiEvent(queueManager.getCurrentSong(), UiEventType.NEXT);
                         gotoNext(true);
 
                         break;
@@ -377,7 +382,7 @@ public class MusicService extends MediaBrowserServiceCompat {
                         // - No queue: ANR
 
                         // Possible solution: (A) Show the Shuttle notification, despite the fact that music isn't playing. Need to customise notification to allow for an empty queue (no current song)
-
+                        newUiEvent(queueManager.getCurrentSong(), UiEventType.PREV);
                         previous(false);
 
                         break;
@@ -410,12 +415,12 @@ public class MusicService extends MediaBrowserServiceCompat {
                         if (isPlaying()) {
 
                             // It's not possible to be playing and the service not be started. No ANR
-
+                            newUiEvent(queueManager.getCurrentSong(), UiEventType.PAUSE);
                             pause(intent.getBooleanExtra(MediaButtonCommand.FORCE_PREVIOUS, false));
                         } else {
 
                             // Same as ServiceCommand.PLAY
-
+                            newUiEvent(queueManager.getCurrentSong(), UiEventType.PLAY);
                             play();
                         }
                         break;
@@ -800,8 +805,10 @@ public class MusicService extends MediaBrowserServiceCompat {
             favoritesPlaylistManager.toggleFavorite(song, isFavorite -> {
                 if (isFavorite) {
                     Toast.makeText(MusicService.this, getString(R.string.song_to_favourites, song.name), Toast.LENGTH_SHORT).show();
+                    newUiEvent(song, UiEventType.FAVORITE);
                 } else {
                     Toast.makeText(MusicService.this, getString(R.string.song_removed_from_favourites, song.name), Toast.LENGTH_SHORT).show();
+                    newUiEvent(song, UiEventType.UNFAVORITE);
                 }
                 notifyChange(InternalIntents.FAVORITE_CHANGED);
                 return Unit.INSTANCE;
@@ -823,6 +830,7 @@ public class MusicService extends MediaBrowserServiceCompat {
                 if (getRepeatMode() == QueueManager.RepeatMode.ONE) {
                     setRepeatMode(QueueManager.RepeatMode.ALL);
                 }
+                newUiEvent(queueManager.getCurrentSong(), UiEventType.SHUFFLE_ON);
                 showToast(R.string.shuffle_on_notif);
                 break;
             case QueueManager.ShuffleMode.ON:
@@ -835,6 +843,7 @@ public class MusicService extends MediaBrowserServiceCompat {
                     }
                 }
                 notifyChange(InternalIntents.QUEUE_CHANGED);
+                newUiEvent(queueManager.getCurrentSong(), UiEventType.SHUFFLE_OFF);
                 showToast(R.string.shuffle_off_notif);
                 break;
         }
@@ -844,14 +853,17 @@ public class MusicService extends MediaBrowserServiceCompat {
         switch (getRepeatMode()) {
             case QueueManager.RepeatMode.OFF:
                 setRepeatMode(QueueManager.RepeatMode.ALL);
+                newUiEvent(queueManager.getCurrentSong(), UiEventType.REPEAT_ALL_SONGS);
                 showToast(R.string.repeat_all_notif);
                 break;
             case QueueManager.RepeatMode.ALL:
                 setRepeatMode(QueueManager.RepeatMode.ONE);
+                newUiEvent(queueManager.getCurrentSong(), UiEventType.REPEAT_CURRENT_SONG);
                 showToast(R.string.repeat_current_notif);
                 break;
             case QueueManager.RepeatMode.ONE:
                 setRepeatMode(QueueManager.RepeatMode.OFF);
+                newUiEvent(queueManager.getCurrentSong(), UiEventType.REPEAT_OFF);
                 showToast(R.string.repeat_off_notif);
                 break;
         }
@@ -1013,7 +1025,7 @@ public class MusicService extends MediaBrowserServiceCompat {
                 Log.e(TAG, "startForeground should have been called, but song is null");
             }
         } catch (NullPointerException | ConcurrentModificationException e) {
-            Crashlytics.log("startForegroundImpl error: " + e.getMessage());
+            Log.e(TAG, "startForegroundImpl error: " + e);
         }
     }
 
@@ -1191,5 +1203,11 @@ public class MusicService extends MediaBrowserServiceCompat {
         public void stopForegroundImpl(boolean removeNotification, boolean withDelay) {
             MusicService.this.stopForegroundImpl(removeNotification, withDelay);
         }
+    }
+
+    private static void newUiEvent(Song song, UiEventType uiEventType){
+        UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType,
+                ShuttleApplication.get());
+        FirebaseIOUtils.saveUiEvent(uiEvent);
     }
 }

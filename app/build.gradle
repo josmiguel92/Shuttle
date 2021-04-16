@@ -62,7 +62,7 @@ android {
         targetSdkVersion Dependencies.targetSdk
 
         versionName Config.versionName
-        versionCode 5000
+        versionCode 5006
 
         resConfigs "en", "zh-rCN", "fr", "de", "ko", "it", "ru", "nl", "tr", "pl", "ro", "hu", "hi-rIN", "uk", "bg-rBG", "en-rGB", "et-rEE", "vi", "pt-rBR", "es", "en-rNZ", "zh-rTW", "es-rES", "ca", "hr", "en-rAU", "eu-rES", "th", "ja"
 
@@ -89,7 +89,6 @@ android {
     buildTypes {
 
         debug {
-            applicationIdSuffix ".debug"
             ext.enableCrashlytics = false
         }
 
@@ -97,15 +96,22 @@ android {
 
             minifyEnabled true
             shrinkResources true
-
+            ext.enableCrashlytics = false
             // For further optimisation, use 'proguard-android-optimize.txt' instead of 'proguard-android.txt'.
             // Last time I checked, it reduced by another ~5000 methods.
             proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.pro')
             signingConfig signingConfigs.release
 
             buildConfigField("String", "LASTFM_API_KEY", "\"${getProperty(getProperties('../private.properties'), 'LASTFM_API_KEY')}\"")
-            manifestPlaceholders = [CRASHLYTICS_API_KEY: "${getProperty(getProperties('../private.properties'), 'CRASHLYTICS_API_KEY')}"]
         }
+      // Append the version name to the end of aligned APKs
+      android.applicationVariants.all { variant ->
+        if (variant.buildType.name == "release") {
+          variant.outputs.all { output ->
+            outputFileName = "${variant.name}-v${variant.versionName}.apk"
+          }
+        }
+      }
     }
 
     // Ignore useless variants, such as devRelease.
@@ -130,16 +136,6 @@ android {
         setIgnore(debugIgnore || releaseIgnore)
     }
 
-    // Set the version code for release builds
-    applicationVariants.all { variant ->
-        if (variant.buildType.name == "release") {
-            def newVersionCode = generateVersionCode()
-            variant.outputs.all { output ->
-                output.setVersionCodeOverride(newVersionCode)
-            }
-        }
-    }
-
     // Used to enable Java8 features
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -153,29 +149,29 @@ android {
         dev {
             dimension "all"
 
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
 
             resConfigs "en", "xxhdpi"
         }
 
         paid {
             dimension "all"
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         free {
             dimension "all"
-            applicationId "another.music.player"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         amazonPaid {
             dimension "all"
-            applicationId "com.simplecity.amp_pro"
+            applicationId "edu.usf.sas.pal.muser"
         }
 
         amazonFree {
             dimension "all"
-            applicationId "another.music.player"
+            applicationId "edu.usf.sas.pal.muser"
         }
     }
 
@@ -227,6 +223,8 @@ dependencies {
     implementation Dependencies.Google.supportv4
     implementation Dependencies.Google.firebaseCore
     implementation Dependencies.Google.firebaseRemoteConfig
+    implementation Dependencies.Google.firebaseFireStore
+    implementation Dependencies.Google.firebaseAuth
     implementation Dependencies.Google.constraintLayout
     implementation Dependencies.Google.chromeCastFramework
 
@@ -237,7 +235,7 @@ dependencies {
     implementation Dependencies.Square.retrofitGson
     implementation Dependencies.Square.sqlBrite
     debugImplementation Dependencies.Square.haha
-    debugImplementation Dependencies.Square.leakCanaryDebug
+    debugImplementation Dependencies.Square.leakCanaryRel
     releaseImplementation Dependencies.Square.leakCanaryRel
 
     // Projects
@@ -271,6 +269,7 @@ dependencies {
     implementation Dependencies.materialDialogCommons
     implementation Dependencies.expandableRecyclerView
     implementation Dependencies.billing
+    implementation Dependencies.apache
 
     implementation Dependencies.butterknife
     kapt Dependencies.butterknifeAnnotationProcessor
@@ -282,10 +281,6 @@ dependencies {
 
     compileOnly Dependencies.daggerAssistedInject
     kapt Dependencies.daggerAssistedInjectProcessor
-
-    implementation(Dependencies.crashlytics) {
-        transitive = true
-    }
 
     // Testing
     testImplementation Dependencies.Testing.junit

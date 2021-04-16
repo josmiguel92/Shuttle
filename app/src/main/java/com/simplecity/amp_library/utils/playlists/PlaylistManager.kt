@@ -9,12 +9,12 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.text.style.StyleSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import com.afollestad.materialdialogs.MaterialDialog
-import com.crashlytics.android.Crashlytics
 import com.simplecity.amp_library.R
 import com.simplecity.amp_library.data.SongsRepository
 import com.simplecity.amp_library.interfaces.FileType
@@ -24,6 +24,7 @@ import com.simplecity.amp_library.model.Query
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.sql.SqlUtils
 import com.simplecity.amp_library.sql.providers.PlayCountTable
+import com.simplecity.amp_library.ui.screens.tagger.TaggerUtils
 import com.simplecity.amp_library.utils.LogUtils
 import com.simplecity.amp_library.utils.SettingsManager
 import com.simplecity.amp_library.utils.ShuttleUtils
@@ -31,7 +32,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import java.util.ArrayList
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -54,7 +55,7 @@ class PlaylistManager @Inject constructor(
         applicationContext.contentResolver.delete(PlayCountTable.URI, null, null)
     }
 
-    fun addToPlaylist(playlist: Playlist, songs: List<Song>, callback: ((Int) -> Unit)?): Disposable? {
+    fun addToPlaylist(context: Context, playlist: Playlist, songs: List<Song>, callback: ((Int) -> Unit)?): Disposable? {
         if (songs.isEmpty()) {
             return null
         }
@@ -89,11 +90,12 @@ class PlaylistManager @Inject constructor(
                             applyToAll.text = String.format(applicationContext.getString(R.string.dialog_checkbox_playlist_duplicate_apply_all), duplicates.size)
 
                             // Fixme: Should not use application context to present dialog.
-                            MaterialDialog.Builder(applicationContext)
+                            MaterialDialog.Builder(context)
                                 .title(R.string.dialog_title_playlist_duplicates)
                                 .customView(customView, false)
                                 .positiveText(R.string.dialog_button_playlist_duplicate_add)
                                 .autoDismiss(false)
+                                    .positiveColor(context.resources.getColor(R.color.colorPrimaryDark))
                                 .onPositive { dialog, which ->
                                     //If we've only got one item, or we're applying it to all items
                                     if (duplicates.size != 1 && !applyToAll.isChecked) {
@@ -108,6 +110,7 @@ class PlaylistManager @Inject constructor(
                                         dialog.dismiss()
                                     }
                                 }
+                                    .negativeColor(context.resources.getColor(R.color.colorPrimaryDark))
                                 .negativeText(R.string.dialog_button_playlist_duplicate_skip)
                                 .onNegative { dialog, which ->
                                     //If we've only got one item, or we're applying it to all items
@@ -200,7 +203,8 @@ class PlaylistManager @Inject constructor(
                             id = java.lang.Long.parseLong(uri.lastPathSegment!!)
                         }
                     } catch (e: NullPointerException) {
-                        Crashlytics.log("Failed to create playlist: " + e.message)
+                        Log.e(TAG, "Failed to create playlist:  $e")
+
                     }
 
                 }
@@ -210,7 +214,8 @@ class PlaylistManager @Inject constructor(
         if (id != -1L) {
             playlist = Playlist(Playlist.Type.USER_CREATED, id, name, true, false, true, true, true)
         } else {
-            Crashlytics.log(String.format("Failed to create playlist. Name: %s, id: %d", name, id))
+            Log.e(TAG, String.format("Failed to create playlist. Name: %s, id: %d", name, id))
+
         }
 
         return playlist
@@ -244,7 +249,7 @@ class PlaylistManager @Inject constructor(
             progressDialog!!.show()
         }
 
-        return ShuttleUtils.getSongsForFileObjects(songsRepository, fileObjects)
+        return ShuttleUtils.getSongsForFileObjects(fileObjects)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
@@ -252,7 +257,7 @@ class PlaylistManager @Inject constructor(
                     if (progressDialog != null && progressDialog.isShowing) {
                         progressDialog.dismiss()
                     }
-                    addToPlaylist(playlist, songs, callback)
+                    addToPlaylist(context, playlist, songs, callback)
                 },
                 { error -> LogUtils.logException(TAG, "Error getting songs for file object", error) }
             )

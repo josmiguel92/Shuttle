@@ -4,15 +4,11 @@ import android.content.Context
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.PopupMenu
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
 import com.bumptech.glide.RequestManager
 import com.simplecity.amp_library.R
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.ui.adapters.SectionedAdapter
@@ -23,28 +19,28 @@ import com.simplecity.amp_library.ui.modelviews.EmptyView
 import com.simplecity.amp_library.ui.modelviews.SelectableViewModel
 import com.simplecity.amp_library.ui.modelviews.ShuffleView
 import com.simplecity.amp_library.ui.modelviews.SongView
+import com.simplecity.amp_library.ui.screens.main.MainController
 import com.simplecity.amp_library.ui.screens.playlist.dialog.CreatePlaylistDialog
 import com.simplecity.amp_library.ui.screens.songs.menu.SongMenuContract
 import com.simplecity.amp_library.ui.screens.tagger.TaggerDialog
 import com.simplecity.amp_library.ui.views.ContextualToolbar
-import com.simplecity.amp_library.utils.ContextualToolbarHelper
-import com.simplecity.amp_library.utils.LogUtils
-import com.simplecity.amp_library.utils.RingtoneManager
-import com.simplecity.amp_library.utils.SettingsManager
+import com.simplecity.amp_library.utils.*
 import com.simplecity.amp_library.utils.extensions.share
 import com.simplecity.amp_library.utils.menu.song.SongMenuUtils
 import com.simplecity.amp_library.utils.playlists.PlaylistMenuHelper
 import com.simplecity.amp_library.utils.sorting.SongSortHelper
 import com.simplecity.amp_library.utils.sorting.SortManager
-import com.simplecity.amp_library.utils.withArgs
 import com.simplecityapps.recycler_adapter.adapter.CompletionListUpdateCallbackAdapter
 import com.simplecityapps.recycler_adapter.model.ViewModel
 import com.simplecityapps.recycler_adapter.recyclerview.RecyclerListener
 import dagger.android.support.AndroidSupportInjection
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.android.synthetic.main.fragment_recycler.recyclerView
+import kotlinx.android.synthetic.main.fragment_recycler.*
 import javax.inject.Inject
 
 class SongListFragment :
@@ -201,6 +197,7 @@ class SongListFragment :
 
             contextualToolbar.setOnMenuItemClickListener(
                 SongMenuUtils.getSongMenuClickListener(
+                    context!!,
                     Single.defer { Single.just(contextualToolbarHelper!!.items) },
                     songsPresenter
                 )
@@ -294,14 +291,17 @@ class SongListFragment :
 
     override fun onSongClick(position: Int, songView: SongView) {
         if (!contextualToolbarHelper!!.handleClick(songView, songView.song)) {
-            songsPresenter.play(songView.song)
+                val uiEvent = EventUtils.newUiEvent(songView.song, UiEventType.PLAY,
+                          ShuttleApplication.get())
+                FirebaseIOUtils.saveUiEvent(uiEvent)
+                songsPresenter.play(songView.song)
         }
     }
 
     override fun onSongOverflowClick(position: Int, view: View, song: Song) {
         val menu = PopupMenu(context!!, view)
         SongMenuUtils.setupSongMenu(menu, false, true, playlistMenuHelper)
-        menu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(song, songsPresenter))
+        menu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(null, context!!, song, songsPresenter))
         menu.show()
     }
 

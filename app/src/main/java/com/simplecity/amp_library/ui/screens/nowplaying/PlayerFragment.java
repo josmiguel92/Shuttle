@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -48,6 +49,7 @@ import com.simplecity.amp_library.glide.palette.ColorSet;
 import com.simplecity.amp_library.glide.palette.ColorSetTranscoder;
 import com.simplecity.amp_library.model.Playlist;
 import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.playback.MusicService;
 import com.simplecity.amp_library.playback.QueueManager;
 import com.simplecity.amp_library.rx.UnsafeAction;
 import com.simplecity.amp_library.rx.UnsafeConsumer;
@@ -57,6 +59,7 @@ import com.simplecity.amp_library.ui.dialog.SongInfoDialog;
 import com.simplecity.amp_library.ui.dialog.UpgradeDialog;
 import com.simplecity.amp_library.ui.screens.drawer.NavigationEventRelay;
 import com.simplecity.amp_library.ui.screens.lyrics.LyricsDialog;
+import com.simplecity.amp_library.ui.screens.main.MainController;
 import com.simplecity.amp_library.ui.screens.queue.pager.QueuePagerFragment;
 import com.simplecity.amp_library.ui.screens.tagger.TaggerDialog;
 import com.simplecity.amp_library.ui.views.FavoriteActionBarView;
@@ -68,6 +71,7 @@ import com.simplecity.amp_library.ui.views.SizableSeekBar;
 import com.simplecity.amp_library.ui.views.SnowfallView;
 import com.simplecity.amp_library.ui.views.multisheet.MultiSheetSlideEventRelay;
 import com.simplecity.amp_library.utils.LogUtils;
+import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
 import com.simplecity.amp_library.utils.PlaceholderProvider;
 import com.simplecity.amp_library.utils.RingtoneManager;
 import com.simplecity.amp_library.utils.SettingsManager;
@@ -76,6 +80,10 @@ import com.simplecity.amp_library.utils.StringUtils;
 import com.simplecity.amp_library.utils.color.ArgbEvaluator;
 import com.simplecity.amp_library.utils.menu.song.SongMenuUtils;
 import dagger.android.support.AndroidSupportInjection;
+import edu.usf.sas.pal.muser.model.UiEvent;
+import edu.usf.sas.pal.muser.model.UiEventType;
+import edu.usf.sas.pal.muser.util.EventUtils;
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
@@ -224,6 +232,14 @@ public class PlayerFragment extends BaseFragment implements
         if (playPauseView != null) {
             playPauseView.setOnClickListener(v -> playPauseView.toggle(() -> {
                 presenter.togglePlayback();
+                Song song = MusicServiceConnectionUtils.getSong();
+                UiEventType uiEventType;
+                if (MusicServiceConnectionUtils.isPlaying()) {
+                    uiEventType = UiEventType.PLAY;
+                } else {
+                    uiEventType = UiEventType.PAUSE;
+                }
+                newUiEvent(song, uiEventType, getContext());
                 return Unit.INSTANCE;
             }));
         }
@@ -314,11 +330,24 @@ public class PlayerFragment extends BaseFragment implements
 
             disposables.add(sharedSeekBarEvents.subscribe(
                     seekBarChangeEvent -> {
+                        UiEventType uiEventType = null;
                         if (seekBarChangeEvent instanceof SeekBarStartChangeEvent) {
+                            uiEventType = UiEventType.SEEK_START;
                             isSeeking = true;
                         } else if (seekBarChangeEvent instanceof SeekBarStopChangeEvent) {
+//                              seek position for SEEK_STOP will always match SEEK_START in the case
+//                              of skipping seek positions using the seek bar. Works fine as intended
+//                              to when dragging the seekbar.
+                            uiEventType = UiEventType.SEEK_STOP;
                             isSeeking = false;
                         }
+                        Song song = MusicServiceConnectionUtils.getSong();
+                        if (uiEventType != null)
+//                            called  MusicServiceConnectionUtils.getPosition() here to fix a lag
+//                            2 -3 seconds in the seekPosition value when the same function is called
+//                            from EventUtils.newUiEvent()
+                            newUiEvent(song, uiEventType, getContext(), MusicServiceConnectionUtils
+                                    .getPosition());
                     },
                     error -> LogUtils.logException(TAG, "Error in seek change event", error))
             );
@@ -588,15 +617,17 @@ public class PlayerFragment extends BaseFragment implements
 
     @Override
     public boolean onMenuItemClick(MenuItem item) {
-        if (!SongMenuUtils.INSTANCE.getSongMenuClickListener(mediaManager.getSong(), presenter).onMenuItemClick(item)) {
-            switch (item.getItemId()) {
-                case R.id.favorite:
-                    ((FavoriteActionBarView) item.getActionView()).toggle();
-                    presenter.toggleFavorite();
-                    return true;
-                case R.id.lyrics:
-                    presenter.showLyrics();
-                    return true;
+        if (getContext() != null) {
+            if (!SongMenuUtils.INSTANCE.getSongMenuClickListener(null, getContext(), mediaManager.getSong(), presenter).onMenuItemClick(item)) {
+                switch (item.getItemId()) {
+                    case R.id.favorite:
+                        ((FavoriteActionBarView) item.getActionView()).toggle();
+                        presenter.toggleFavorite();
+                        return true;
+                    case R.id.lyrics:
+                        presenter.showLyrics();
+                        return true;
+                }
             }
         }
 
@@ -705,6 +736,16 @@ public class PlayerFragment extends BaseFragment implements
                 Aesthetic.get(getContext()).colorAccent(),
                 Pair::new
         ).map(pair -> ColorSet.Companion.fromPrimaryAccentColors(getContext(), pair.first, pair.second));
+    }
+
+    private void newUiEvent(Song song, UiEventType uiEventType, Context context, long position){
+        UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, context, position);
+        FirebaseIOUtils.saveUiEvent(uiEvent);
+    }
+
+    private void newUiEvent(Song song, UiEventType uiEventType, Context context){
+        UiEvent uiEvent = EventUtils.newUiEvent(song, uiEventType, context);
+        FirebaseIOUtils.saveUiEvent(uiEvent);
     }
 
     // SongMenuContract.View implementation

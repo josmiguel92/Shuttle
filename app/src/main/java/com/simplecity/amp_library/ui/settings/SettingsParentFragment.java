@@ -206,7 +206,7 @@ public class SettingsParentFragment extends BaseNavigationController implements
             Preference helpPreference = findPreference(SettingsManager.KEY_PREF_HELP);
             if (helpPreference != null) {
                 helpPreference.setOnPreferenceClickListener(preference -> {
-                    supportPresenter.helpClicked();
+                    supportPresenter.emailClicked();
                     return true;
                 });
             }
@@ -270,6 +270,14 @@ public class SettingsParentFragment extends BaseNavigationController implements
             if (accentColorColorPreference != null) {
                 accentColorColorPreference.setOnPreferenceClickListener(preference -> {
                     settingsPresenter.accentColorClicked(getContext());
+                    return true;
+                });
+            }
+
+            Preference setDefaultThemePreference = findPreference(SettingsManager.KEY_PREF_SET_DEFAULT_THEME);
+            if (setDefaultThemePreference != null){
+                setDefaultThemePreference.setOnPreferenceClickListener(preference -> {
+                    settingsPresenter.setDefaultThemeClicked(getContext());
                     return true;
                 });
             }
@@ -496,6 +504,13 @@ public class SettingsParentFragment extends BaseNavigationController implements
         @Override
         public void showHelp(Intent intent) {
             startActivity(intent);
+        }
+
+        @Override
+        public void openEmail(Intent intent) {
+            if (intent.resolveActivity(getContext().getPackageManager()) != null) {
+                startActivity(intent);
+            }
         }
 
         @Override

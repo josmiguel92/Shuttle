@@ -30,6 +30,7 @@ import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.simplecity.amp_library.R
+import com.simplecity.amp_library.ShuttleApplication
 import com.simplecity.amp_library.cast.CastManager
 import com.simplecity.amp_library.data.Repository
 import com.simplecity.amp_library.glide.utils.AlwaysCrossFade
@@ -52,6 +53,7 @@ import com.simplecity.amp_library.ui.modelviews.SongView
 import com.simplecity.amp_library.ui.modelviews.SubheaderView
 import com.simplecity.amp_library.ui.screens.album.detail.AlbumDetailFragment
 import com.simplecity.amp_library.ui.screens.drawer.DrawerLockManager
+import com.simplecity.amp_library.ui.screens.main.MainController
 import com.simplecity.amp_library.ui.screens.playlist.dialog.CreatePlaylistDialog
 import com.simplecity.amp_library.ui.screens.tagger.TaggerDialog
 import com.simplecity.amp_library.ui.views.ContextualToolbar
@@ -82,6 +84,9 @@ import com.simplecityapps.recycler_adapter.adapter.ViewModelAdapter
 import com.simplecityapps.recycler_adapter.model.ViewModel
 import com.simplecityapps.recycler_adapter.recyclerview.RecyclerListener
 import dagger.android.support.AndroidSupportInjection
+import edu.usf.sas.pal.muser.model.UiEventType
+import edu.usf.sas.pal.muser.util.EventUtils
+import edu.usf.sas.pal.muser.util.FirebaseIOUtils
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -277,7 +282,7 @@ class GenreDetailFragment :
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
-        if (!GenreMenuUtils.getGenreClickListener(genre, presenter).onMenuItemClick(item)) {
+        if (!GenreMenuUtils.getGenreClickListener(context!!, genre, presenter).onMenuItemClick(item)) {
             val albumSortOrder = AlbumSortHelper.handleAlbumDetailMenuSortOrderClicks(item)
             if (albumSortOrder != null) {
                 sortManager.genreDetailAlbumsSortOrder = albumSortOrder
@@ -379,7 +384,7 @@ class GenreDetailFragment :
             disposables.add(playlistMenuHelper.createUpdatingPlaylistMenu(sub).subscribe())
 
             contextualToolbar.setOnMenuItemClickListener(
-                SongMenuUtils.getSongMenuClickListener(Single.defer { Operators.reduceSongSingles(contextualToolbarHelper!!.items) }, presenter)
+                SongMenuUtils.getSongMenuClickListener(context!!, Single.defer { Operators.reduceSongSingles(contextualToolbarHelper!!.items) }, presenter)
             )
 
             contextualToolbarHelper = object : ContextualToolbarHelper<Single<List<Song>>>(context!!, contextualToolbar, object : ContextualToolbarHelper.Callback {
@@ -447,6 +452,9 @@ class GenreDetailFragment :
     private var songClickListener: SongView.ClickListener = object : SongView.ClickListener {
         override fun onSongClick(position: Int, songView: SongView) {
             if (!contextualToolbarHelper!!.handleClick(songView, Single.just(listOf(songView.song)))) {
+                val uiEvent = EventUtils.newUiEvent(songView.song, UiEventType.PLAY,
+                        ShuttleApplication.get())
+                FirebaseIOUtils.saveUiEvent(uiEvent)
                 presenter.songClicked(songView.song)
             }
         }
@@ -458,7 +466,8 @@ class GenreDetailFragment :
         override fun onSongOverflowClick(position: Int, v: View, song: Song) {
             val popupMenu = PopupMenu(v.context, v)
             SongMenuUtils.setupSongMenu(popupMenu, false, true, playlistMenuHelper)
-            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(song, presenter))
+            popupMenu.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(null,
+                    context!!, song, presenter))
             popupMenu.show()
         }
 
@@ -482,7 +491,7 @@ class GenreDetailFragment :
         override fun onAlbumOverflowClicked(v: View, album: Album) {
             val popupMenu = PopupMenu(v.context, v)
             AlbumMenuUtils.setupAlbumMenu(popupMenu, playlistMenuHelper, true)
-            popupMenu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(album, presenter))
+            popupMenu.setOnMenuItemClickListener(AlbumMenuUtils.getAlbumMenuClickListener(context!!, album, presenter))
             popupMenu.show()
         }
     }

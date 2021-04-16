@@ -8,7 +8,6 @@ import android.os.Build;
 import android.support.v4.provider.DocumentFile;
 import android.util.Log;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.crashlytics.android.Crashlytics;
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.utils.SettingsManager;
 import java.io.File;
@@ -162,7 +161,9 @@ public class TaggerUtils {
                 }
             }
         } catch (NoSuchMethodError e) {
-            Crashlytics.log("getExtSdCardPaths() failed. " + e.getMessage());
+            Log.e(TAG, "getExtSdCardPaths() failed. " + e);
+
+
         }
         return paths.toArray(new String[paths.size()]);
     }
@@ -217,9 +218,10 @@ public class TaggerUtils {
                 .title(R.string.edit_tags)
                 .content(hasChecked ? R.string.tag_editor_document_tree_permission_failed : R.string.tag_editor_document_tree_message)
                 .positiveText(R.string.button_ok)
+                .positiveColor(context.getResources().getColor(R.color.colorPrimaryDark))
                 .onPositive(listener);
         if (hasChecked) {
-            builder.negativeText(R.string.cancel);
+            builder.negativeColor(context.getResources().getColor(R.color.colorPrimaryDark)).negativeText(R.string.cancel);
         }
         builder.show();
     }
